@@ -1,0 +1,15 @@
+{
+    "channel_names": {
+        "0": "R",
+        "1": "G",
+        "2": "B"
+    },
+    "labels": {
+        "background": 0,
+        "Lesion": 1
+    },
+    "numTraining": 1500,
+    "file_ending": ".png",
+    "name": "Dataset001_isic2017",
+    "description": "ISIC 2017 Skin Lesion Analysis Towards Melanoma Detection"
+}

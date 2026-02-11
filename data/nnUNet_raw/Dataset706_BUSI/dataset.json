@@ -1,0 +1,18 @@
+{
+    "name": "BUSI",
+    "description": "BUSI dataset converted for nnU-Net with Train/Test Split",
+    "reference": "BUSI",
+    "licence": "CC-BY",
+    "release": "1.0",
+    "tensorImageSize": "2D",
+    "channel_names": {
+        "0": "RGB"
+    },
+    "labels": {
+        "background": 0,
+        "tumor": 1
+    },
+    "numTraining": 518,
+    "file_ending": ".nii.gz",
+    "overwrite_image_reader_writer": "SimpleITKIO"
+}

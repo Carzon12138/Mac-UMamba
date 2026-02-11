@@ -1,0 +1,15 @@
+{
+    "channel_names": {
+        "0": "R",
+        "1": "G",
+        "2": "B"
+    },
+    "labels": {
+        "background": 0,
+        "Lesion": 1
+    },
+    "numTraining": 0,
+    "file_ending": ".png",
+    "name": "Dataset003_PH2",
+    "description": "PH2 Dataset for Skin Lesion Analysis"
+}

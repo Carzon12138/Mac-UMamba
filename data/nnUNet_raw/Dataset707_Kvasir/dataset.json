@@ -1,0 +1,19 @@
+{
+    "name": "Kvasir-SEG",
+    "description": "Kvasir-SEG polyp segmentation dataset converted for nnU-Net",
+    "reference": "https://datasets.simula.no/kvasir-seg/",
+    "licence": "CC BY-NC 4.0",
+    "release": "1.0",
+    "tensorImageSize": "2D",
+    "channel_names": {
+        "0": "R",
+        "1": "G",
+        "2": "B"
+    },
+    "labels": {
+        "background": 0,
+        "polyp": 1
+    },
+    "numTraining": 800,
+    "file_ending": ".png"
+}

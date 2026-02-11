@@ -1,0 +1,15 @@
+{
+    "name": "Dataset002_isic2018",
+    "description": "ISIC 2018 dataset with RGB channel splitting for improved accuracy.",
+    "channel_names": {
+        "0": "R",
+        "1": "G",
+        "2": "B"
+    },
+    "labels": {
+        "background": 0,
+        "lesion": 1
+    },
+    "numTraining": 1886,
+    "file_ending": ".png"
+}
