@@ -1,4 +1,4 @@
-torch=2.0.1
+torch==2.0.1
 torchvision
 torchaudio
 # Mamba dependencies (require strict environment matching, typically CUDA 11.8+)
