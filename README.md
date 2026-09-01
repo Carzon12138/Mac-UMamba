@@ -90,6 +90,27 @@ See the [complete figure list and captions](docs/figures/README.md).
 
 The repository includes dataset metadata and conversion utilities only. Raw datasets, trained weights, experiment outputs, the manuscript source and IDE files are intentionally excluded.
 
+## Repository migration
+
+The original GitHub account is no longer available. This repository is the migrated and maintained location for MAC-UMamba; please use it for future downloads, issues and updates.
+
 ## Citation
 
-If you use this code, please cite the associated MAC-UMamba paper.
+If you use this code, please cite:
+
+DOI: [10.1016/j.eswa.2026.132606](https://doi.org/10.1016/j.eswa.2026.132606)
+
+```bibtex
+@article{ZHANG2026132606,
+  title = {MAC-UMamba: multi-scale asymmetric channel-calibrated hybrid architecture for generalizable biomedical segmentation},
+  journal = {Expert Systems with Applications},
+  volume = {325},
+  pages = {132606},
+  year = {2026},
+  issn = {0957-4174},
+  doi = {10.1016/j.eswa.2026.132606},
+  url = {https://www.sciencedirect.com/science/article/pii/S0957417426015198},
+  author = {Enbao Zhang and Hui Shen and Nana Bao and Dandan Chen},
+  keywords = {Mamba architecture, Multi-scale feature extraction, Dynamic channel calibration, Asymmetric scanning}
+}
+```
