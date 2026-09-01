@@ -63,13 +63,13 @@ Use `CUDA_VISIBLE_DEVICES=0` to select a GPU. The trainer also accepts `-device 
 
 ### 5. Predict
 
-Input files must follow nnU-Net naming, for example `case_0000.png` for a single-channel input. Use the same dataset configuration and trainer used during training:
+Input files must follow nnU-Net naming. For the three-channel ISIC 2017 dataset, a case should contain `case_0000.png`, `case_0001.png` and `case_0002.png`. Use the same dataset configuration and trainer used during training:
 
 ```bash
 nnUNetv2_predict \
   -d Dataset703_isic2017 \
-  -i /path/to/imagesTs \
-  -o /path/to/predictions \
+  -i data/nnUNet_raw/Dataset703_isic2017/imagesTs \
+  -o data/predictions/Dataset703_isic2017 \
   -tr nnUNetTrainerMACUmamba -p nnUNetPlans -c 2d \
   -f 0 1 2 3 4 -device cuda
 ```

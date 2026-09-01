@@ -22,3 +22,5 @@ data/nnUNet_raw/*/imagesTr/
 data/nnUNet_raw/*/imagesTs/
 data/nnUNet_raw/*/labelsTr/
 data/nnUNet_raw/*/labelsTs/
+data/predictions/
+predictions/
