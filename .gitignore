@@ -16,3 +16,9 @@ wandb/
 results/
 runs/
 checkpoints/
+data/nnUNet_preprocessed/
+data/nnUNet_results/
+data/nnUNet_raw/*/imagesTr/
+data/nnUNet_raw/*/imagesTs/
+data/nnUNet_raw/*/labelsTr/
+data/nnUNet_raw/*/labelsTs/
