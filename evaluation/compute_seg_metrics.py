@@ -7,7 +7,7 @@ from tqdm import tqdm
 from scipy.spatial.distance import cdist
 from scipy.spatial import KDTree
 
-# Optional Dependencies
+
 try:
     import nibabel as nb
     HAS_NIBABEL = True
@@ -25,14 +25,14 @@ def compute_dice_coefficient(y_true, y_pred):
     y_true_sum = np.sum(y_true)
     y_pred_sum = np.sum(y_pred)
 
-    # Case 1: GT is empty
+
     if y_true_sum == 0:
         if y_pred_sum == 0:
-            return np.nan  # True Negative -> Exclude
+            return np.nan
         else:
-            return 0.0     # False Positive -> Penalize
+            return 0.0
 
-    # Case 2: GT exists
+
     intersection = np.sum(y_true * y_pred)
     return (2. * intersection) / (y_true_sum + y_pred_sum + 1e-6)
 
@@ -67,7 +67,7 @@ def compute_nsd_3d_fast(gt, seg, spacing=(1, 1, 1), tau=2.0):
     gt_points = get_surface_points(gt)
     seg_points = get_surface_points(seg)
 
-    # Logic Update for NSD
+
     if len(gt_points) == 0:
         if len(seg_points) == 0:
             return np.nan
@@ -101,7 +101,7 @@ def compute_nsd_2d(gt, seg, tau=3.0):
     gt_surface = np.argwhere((gt > 0) & (gt_eroded == 0))
     seg_surface = np.argwhere((seg > 0) & (seg_eroded == 0))
 
-    # Logic Update for NSD
+
     if len(gt_surface) == 0:
         if len(seg_surface) == 0:
             return np.nan
@@ -134,7 +134,7 @@ def print_class_average_stats(df, metrics_suffix=['DSC', 'IOU', 'NSD']):
 
         class_means = []
         for col in cols:
-            data = df[col].dropna() # Drop NaN values (True Negatives)
+            data = df[col].dropna()
             count = len(data)
             if count == 0:
                 print(f"{col:<20} | No Valid Data")
@@ -237,13 +237,13 @@ def process_3d_nifti(gt_path, seg_path, save_path):
                 gt_bin = (gt_data == c)
                 seg_bin = (seg_data == c)
 
-                # DSC & IOU (Will return NaN if GT empty & Pred empty)
+
                 dsc = compute_dice_coefficient(gt_bin, seg_bin)
                 iou = compute_iou(gt_bin, seg_bin)
                 metrics_data[f'Class_{c}_DSC'].append(dsc)
                 metrics_data[f'Class_{c}_IOU'].append(iou)
 
-                # NSD (Will return NaN if GT empty & Pred empty)
+
                 nsd = compute_nsd_3d_fast(gt_bin, seg_bin, spacing=spacing, tau=2.0)
                 metrics_data[f'Class_{c}_NSD'].append(nsd)
 
@@ -310,7 +310,7 @@ def process_2d_image(gt_path, seg_path, save_path):
 
     is_multi = len(classes) > 1 or (len(classes) == 1 and classes[0] != 1)
 
-    # Init Data (Removed HD95)
+
     metrics = OrderedDict([('Name', [])])
     class_names = []
     for c in classes:
@@ -350,7 +350,7 @@ def process_2d_image(gt_path, seg_path, save_path):
             gt_bin = (gt_img == c_val).astype(np.uint8)
             seg_bin = (seg_img == c_val).astype(np.uint8)
 
-            # Metrics
+
             dsc = compute_dice_coefficient(gt_bin, seg_bin)
             iou = compute_iou(gt_bin, seg_bin)
             nsd = compute_nsd_2d(gt_bin, seg_bin, tau=2.0)

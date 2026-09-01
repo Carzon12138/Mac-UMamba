@@ -1,17 +1,17 @@
-#    Copyright 2021 HIP Applied Computer Vision Lab, Division of Medical Image Computing, German Cancer Research Center
-#    (DKFZ), Heidelberg, Germany
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 from typing import Tuple, Union, List
 import numpy as np
@@ -40,16 +40,16 @@ class SimpleITKIO(BaseReaderWriter):
             directions.append(itk_image.GetDirection())
             npy_image = sitk.GetArrayFromImage(itk_image)
             if npy_image.ndim == 2:
-                # 2d
+
                 npy_image = npy_image[None, None]
                 max_spacing = max(spacings[-1])
                 spacings_for_nnunet.append((max_spacing * 999, *list(spacings[-1])[::-1]))
             elif npy_image.ndim == 3:
-                # 3d, as in original nnunet
+
                 npy_image = npy_image[None]
                 spacings_for_nnunet.append(list(spacings[-1])[::-1])
             elif npy_image.ndim == 4:
-                # 4d, multiple modalities in one file
+
                 spacings_for_nnunet.append(list(spacings[-1])[::-1][1:])
                 pass
             else:
@@ -100,13 +100,13 @@ class SimpleITKIO(BaseReaderWriter):
         stacked_images = np.vstack(images)
         dict = {
             'sitk_stuff': {
-                # this saves the sitk geometry information. This part is NOT used by nnU-Net!
+
                 'spacing': spacings[0],
                 'origin': origins[0],
                 'direction': directions[0]
             },
-            # the spacing is inverted with [::-1] because sitk returns the spacing in the wrong order lol. Image arrays
-            # are returned x,y,z but spacing is returned z,y,x. Duh.
+
+
             'spacing': spacings_for_nnunet[0]
         }
         return stacked_images.astype(np.float32), dict

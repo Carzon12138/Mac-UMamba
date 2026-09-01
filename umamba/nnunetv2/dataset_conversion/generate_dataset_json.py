@@ -59,14 +59,14 @@ def generate_dataset_json(output_folder: str,
     if has_regions:
         assert regions_class_order is not None, f"You have defined regions but regions_class_order is not set. " \
                                                 f"You need that."
-    # channel names need strings as keys
+
     keys = list(channel_names.keys())
     for k in keys:
         if not isinstance(k, str):
             channel_names[str(k)] = channel_names[k]
             del channel_names[k]
 
-    # labels need ints as values
+
     for l in labels.keys():
         value = labels[l]
         if isinstance(value, (tuple, list)):
@@ -76,8 +76,8 @@ def generate_dataset_json(output_folder: str,
             labels[l] = int(labels[l])
 
     dataset_json = {
-        'channel_names': channel_names,  # previously this was called 'modality'. I didn't like this so this is
-        # channel_names now. Live with it.
+        'channel_names': channel_names,
+
         'labels': labels,
         'numTraining': num_training_cases,
         'file_ending': file_ending,

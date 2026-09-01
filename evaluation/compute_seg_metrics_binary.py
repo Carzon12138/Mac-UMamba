@@ -121,7 +121,7 @@ def process_2d_binary(gt_path, seg_path, save_path):
     for fname in tqdm(seg_files):
         base = os.path.splitext(fname)[0].replace('_0000', '')
 
-        # 尝试匹配常见命名
+
         gt_candidates = [
                             base + ext for ext in valid_ext
                         ] + [
@@ -192,7 +192,7 @@ def process_3d_binary(gt_path, seg_path, save_path):
 
     print(f"Processing {len(files)} 3D volumes (binary mode)...")
     for fname in tqdm(files):
-        gt_name = fname  # 假设文件名相同，或可自行添加匹配逻辑
+        gt_name = fname
         gt_file = os.path.join(gt_path, gt_name)
         seg_file = os.path.join(seg_path, fname)
 
@@ -209,7 +209,7 @@ def process_3d_binary(gt_path, seg_path, save_path):
             if gt.shape != seg.shape:
                 continue
 
-            # Binary: !=0 -> foreground
+
             gt_bin = (gt > 0).astype(np.uint8)
             seg_bin = (seg > 0).astype(np.uint8)
 

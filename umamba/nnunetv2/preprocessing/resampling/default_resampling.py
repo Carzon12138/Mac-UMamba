@@ -16,7 +16,7 @@ def get_do_separate_z(spacing: Union[Tuple[float, ...], List[float], np.ndarray]
 
 
 def get_lowres_axis(new_spacing: Union[Tuple[float, ...], List[float], np.ndarray]):
-    axis = np.where(max(new_spacing) / np.array(new_spacing) == 1)[0]  # find which axis is anisotropic
+    axis = np.where(max(new_spacing) / np.array(new_spacing) == 1)[0]
     return axis
 
 
@@ -55,11 +55,11 @@ def resample_data_or_seg_to_spacing(data: np.ndarray,
 
     if axis is not None:
         if len(axis) == 3:
-            # every axis has the same spacing, this should never happen, why is this code here?
+
             do_separate_z = False
         elif len(axis) == 2:
-            # this happens for spacings like (0.24, 1.25, 1.25) for example. In that case we do not want to resample
-            # separately in the out of plane axis
+
+
             do_separate_z = False
         else:
             pass
@@ -91,19 +91,19 @@ def fast_resize_segmentation(segmentation, new_shape, mode="nearest"):
     else:
         assert len(segmentation.shape[1:]) == len(new_shape), f"segmentation.shape = {segmentation.shape}, new_shape = {new_shape}"
         segmentation = torch.from_numpy(segmentation).unsqueeze(0).float()
-    #if order == 0:
-        #return resize(segmentation.astype(float), new_shape, order, mode="edge", clip=True, anti_aliasing=False).astype(tpe)
+
+
     if mode == "nearest":
         seg_torch = torch.nn.functional.interpolate(segmentation, new_shape, mode=mode)
         reshaped = seg_torch
     else:
-        #reshaped = np.zeros(new_shape, dtype=segmentation.dtype)
+
         unique_labels = torch.unique(segmentation)
         seg_torch = segmentation
         reshaped = torch.zeros([*seg_torch.shape[:2], *new_shape], dtype=seg_torch.dtype, device=seg_torch.device)
         for i, c in enumerate(unique_labels):
-            #mask = segmentation == c
-            #reshaped_multihot = resize(mask.astype(float), new_shape, order, mode="edge", clip=True, anti_aliasing=False)
+
+
             mask = seg_torch == c
             reshaped_multihot = torch.nn.functional.interpolate(mask.float(), new_shape, mode=mode, align_corners=False)
             reshaped[reshaped_multihot >= 0.5] = c
@@ -130,7 +130,7 @@ def fast_resample_data_or_seg_to_shape(data: Union[torch.Tensor, np.ndarray],
         4: "trilinear" if new_shape[0] > 1 else "bicubic",
         5: "trilinear" if new_shape[0] > 1 else "bicubic",
     }
-    
+
     if is_seg:
         print(f"seg.shape: {data.shape}")
         resize_fn = fast_resize_segmentation
@@ -157,7 +157,7 @@ def fast_resample_data_or_seg_to_shape(data: Union[torch.Tensor, np.ndarray],
             new_shape = new_shape[1:]
         else:
             torch_data = torch_data.unsqueeze(0)
-        
+
         torch_data = resize_fn(torch_data.to(device), tuple(new_shape), **kwargs)
 
         if new_shape[0] == 1:
@@ -171,7 +171,7 @@ def fast_resample_data_or_seg_to_shape(data: Union[torch.Tensor, np.ndarray],
             reshaped_final_data = torch_data.numpy().astype(dtype_data)
         else:
             reshaped_final_data = torch_data.to(dtype_data)
-        
+
         print(f"Reshaped data from {shape} to {new_shape}")
         print(f"reshaped_final_data shape: {reshaped_final_data.shape}")
         assert reshaped_final_data.ndim == 4, f"reshaped_final_data.shape = {reshaped_final_data.shape}"
@@ -213,11 +213,11 @@ def resample_data_or_seg_to_shape(data: Union[torch.Tensor, np.ndarray],
 
     if axis is not None:
         if len(axis) == 3:
-            # every axis has the same spacing, this should never happen, why is this code here?
+
             do_separate_z = False
         elif len(axis) == 2:
-            # this happens for spacings like (0.24, 1.25, 1.25) for example. In that case we do not want to resample
-            # separately in the out of plane axis
+
+
             do_separate_z = False
         else:
             pass
@@ -249,8 +249,8 @@ def resample_data_or_seg(data: np.ndarray, new_shape: Union[Tuple[float, ...], L
     if is_seg:
         print("resizing segmentation, order is", order, "order z is", order_z)
         print("data shape", data.shape)
-        #print("do separate z", do_separate_z, "axis", axis)
-        #print("new shape", new_shape)
+
+
         resize_fn = resize_segmentation
         kwargs = OrderedDict()
     else:
@@ -264,7 +264,7 @@ def resample_data_or_seg(data: np.ndarray, new_shape: Union[Tuple[float, ...], L
     if np.any(shape != new_shape):
         data = data.astype(float)
         if do_separate_z:
-            # print("separate z, order in z is", order_z, "order inplane is", order)
+
             assert len(axis) == 1, "only one anisotropic axis supported"
             axis = axis[0]
             if axis == 0:
@@ -287,7 +287,7 @@ def resample_data_or_seg(data: np.ndarray, new_shape: Union[Tuple[float, ...], L
                 reshaped_data = np.stack(reshaped_data, axis)
                 if shape[axis] != new_shape[axis]:
 
-                    # The following few lines are blatantly copied and modified from sklearn's resize()
+
                     rows, cols, dim = new_shape[0], new_shape[1], new_shape[2]
                     orig_rows, orig_cols, orig_dim = reshaped_data.shape
 
@@ -305,7 +305,7 @@ def resample_data_or_seg(data: np.ndarray, new_shape: Union[Tuple[float, ...], L
                         reshaped_final_data.append(map_coordinates(reshaped_data, coord_map, order=order_z,
                                                                    mode='nearest')[None])
                     else:
-                        unique_labels = np.sort(pd.unique(reshaped_data.ravel()))  # np.unique(reshaped_data)
+                        unique_labels = np.sort(pd.unique(reshaped_data.ravel()))
                         reshaped = np.zeros(new_shape, dtype=dtype_data)
 
                         for i, cl in enumerate(unique_labels):
@@ -318,12 +318,12 @@ def resample_data_or_seg(data: np.ndarray, new_shape: Union[Tuple[float, ...], L
                     reshaped_final_data.append(reshaped_data[None])
             reshaped_final_data = np.vstack(reshaped_final_data)
         else:
-            # print("no separate z, order", order)
+
             reshaped = []
             for c in range(data.shape[0]):
                 reshaped.append(resize_fn(data[c], new_shape, order, **kwargs)[None])
             reshaped_final_data = np.vstack(reshaped)
         return reshaped_final_data.astype(dtype_data)
     else:
-        # print("no resampling necessary")
+
         return data

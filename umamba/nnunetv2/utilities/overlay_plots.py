@@ -1,16 +1,16 @@
-#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 import multiprocessing
 from multiprocessing.pool import Pool
 from typing import Tuple, Union
@@ -62,7 +62,7 @@ def generate_overlay(input_image: np.ndarray, segmentation: np.ndarray, mapping:
 
     returned image is scaled to [0, 255] (uint8)!!!
     """
-    # create a copy of image
+
     image = np.copy(input_image)
 
     if image.ndim == 2:
@@ -77,19 +77,19 @@ def generate_overlay(input_image: np.ndarray, segmentation: np.ndarray, mapping:
         raise RuntimeError("unexpected image shape. only 2D images and 2D images with color channels (color in "
                            "last dimension) are supported")
 
-    # rescale image to [0, 255]
+
     image = image - image.min()
     image = image / image.max() * 255
 
-    # create output
+
     if mapping is None:
-        uniques = np.sort(pd.unique(segmentation.ravel()))  # np.unique(segmentation)
+        uniques = np.sort(pd.unique(segmentation.ravel()))
         mapping = {i: c for c, i in enumerate(uniques)}
 
     for l in mapping.keys():
         image[segmentation == l] += overlay_intensity * np.array(hex_to_rgb(color_cycle[mapping[l]]))
 
-    # rescale result to [0, 255]
+
     image = image / image.max() * 255
     return image.astype(np.uint8)
 
@@ -142,7 +142,7 @@ def plot_overlay(image_file: str, segmentation_file: str, image_reader_writer: B
     assert image.ndim == 3, 'only 3D images/segs are supported'
 
     selected_slice = select_slice_to_plot2(image, seg)
-    # print(image.shape, selected_slice)
+
 
     overlay = generate_overlay(image[selected_slice], seg[selected_slice], overlay_intensity=overlay_intensity)
 

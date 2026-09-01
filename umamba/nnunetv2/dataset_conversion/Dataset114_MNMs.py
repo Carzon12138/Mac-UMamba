@@ -32,9 +32,9 @@ def read_csv(csv_file: str):
     return patient_info
 
 
-# ------------------------------------------------------------------------------
-# Conversion to nnUNet format
-# ------------------------------------------------------------------------------
+
+
+
 def convert_mnms(src_data_folder: Path, csv_file_name: str, dataset_id: int):
     out_dir, out_train_dir, out_labels_dir, out_test_dir = make_out_dirs(dataset_id, task_name="MNMs")
     patients_train = [f for f in (src_data_folder / "Training" / "Labeled").iterdir() if f.is_dir()]
@@ -45,10 +45,10 @@ def convert_mnms(src_data_folder: Path, csv_file_name: str, dataset_id: int):
     save_cardiac_phases(patients_train, patient_info, out_train_dir, out_labels_dir)
     save_cardiac_phases(patients_test, patient_info, out_test_dir)
 
-    # There are non-orthonormal direction cosines in the test and validation data.
-    # Not sure if the data should be fixed, or we should skip the problematic data.
-    # patients_val = [f for f in (src_data_folder / "Validation").iterdir() if f.is_dir()]
-    # save_cardiac_phases(patients_val, patient_info, out_train_dir, out_labels_dir)
+
+
+
+
 
     generate_dataset_json(
         str(out_dir),
@@ -57,7 +57,7 @@ def convert_mnms(src_data_folder: Path, csv_file_name: str, dataset_id: int):
         },
         labels={"background": 0, "LVBP": 1, "LVM": 2, "RV": 3},
         file_ending=".nii.gz",
-        num_training_cases=len(patients_train) * 2,  # 2 since we have ED and ES for each patient
+        num_training_cases=len(patients_train) * 2,
     )
 
 
@@ -79,39 +79,39 @@ def save_cardiac_phases(
 
 
 def save_extracted_nifti_slice(image, ed_frame: int, es_frame: int, out_dir: Path, patient: Path):
-    # Save only extracted diastole and systole slices from the 4D H x W x D x time volume.
+
     image_ed = nib.Nifti1Image(image.dataobj[..., ed_frame], image.affine)
     image_es = nib.Nifti1Image(image.dataobj[..., es_frame], image.affine)
 
-    # Labels do not have modality identifiers. Labels always end with 'gt'.
+
     suffix = ".nii.gz" if image.get_filename().endswith("_gt.nii.gz") else "_0000.nii.gz"
 
     nib.save(image_ed, str(out_dir / f"{patient.name}_frame{ed_frame:02d}{suffix}"))
     nib.save(image_es, str(out_dir / f"{patient.name}_frame{es_frame:02d}{suffix}"))
 
 
-# ------------------------------------------------------------------------------
-# Create custom splits
-# ------------------------------------------------------------------------------
+
+
+
 def create_custom_splits(src_data_folder: Path, csv_file: str, dataset_id: int, num_val_patients: int = 25):
     existing_splits = os.path.join(nnUNet_preprocessed, f"Dataset{dataset_id}_MNMs", "splits_final.json")
     splits = load_json(existing_splits)
 
     patients_train = [f.name for f in (src_data_folder / "Training" / "Labeled").iterdir() if f.is_dir()]
-    # Filter out any patients not in the training set
+
     patient_info = {
         patient: data
         for patient, data in read_csv(str(src_data_folder / csv_file)).items()
         if patient in patients_train
     }
 
-    # Get train and validation patients for both vendors
+
     patients_a = [patient for patient, patient_data in patient_info.items() if patient_data["vendor"] == "A"]
     patients_b = [patient for patient, patient_data in patient_info.items() if patient_data["vendor"] == "B"]
     train_a, val_a = get_vendor_split(patients_a, num_val_patients)
     train_b, val_b = get_vendor_split(patients_b, num_val_patients)
 
-    # Build filenames from corresponding patient frames
+
     train_a = [f"{patient}_frame{patient_info[patient][frame]:02d}" for patient in train_a for frame in ["es", "ed"]]
     train_b = [f"{patient}_frame{patient_info[patient][frame]:02d}" for patient in train_b for frame in ["es", "ed"]]
     train_a_mix_1, train_a_mix_2 = train_a[: len(train_a) // 2], train_a[len(train_a) // 2 :]
@@ -120,8 +120,8 @@ def create_custom_splits(src_data_folder: Path, csv_file: str, dataset_id: int, 
     val_b = [f"{patient}_frame{patient_info[patient][frame]:02d}" for patient in val_b for frame in ["es", "ed"]]
 
     for train_set in [train_a, train_b, train_a_mix_1 + train_b_mix_1, train_a_mix_2 + train_b_mix_2]:
-        # For each train set, we evaluate on A, B and (A + B) respectively
-        # See table 3 from the original paper for more details.
+
+
         splits.append({"train": train_set, "val": val_a})
         splits.append({"train": train_set, "val": val_b})
         splits.append({"train": train_set, "val": val_a + val_b})

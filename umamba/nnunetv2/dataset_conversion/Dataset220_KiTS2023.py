@@ -9,7 +9,7 @@ def convert_kits2023(kits_base_dir: str, nnunet_dataset_id: int = 220):
 
     foldername = "Dataset%03.0d_%s" % (nnunet_dataset_id, task_name)
 
-    # setting up nnU-Net folders
+
     out_base = join(nnUNet_raw, foldername)
     imagestr = join(out_base, "imagesTr")
     labelstr = join(out_base, "labelsTr")
@@ -45,6 +45,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     amos_base = args.input_folder
     convert_kits2023(amos_base, args.d)
-
-    # /media/isensee/raw_data/raw_datasets/kits23/dataset
-

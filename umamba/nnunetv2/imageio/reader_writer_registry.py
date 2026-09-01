@@ -26,7 +26,7 @@ def determine_reader_writer_from_dataset_json(dataset_json_content: dict, exampl
     if 'overwrite_image_reader_writer' in dataset_json_content.keys() and \
             dataset_json_content['overwrite_image_reader_writer'] != 'None':
         ioclass_name = dataset_json_content['overwrite_image_reader_writer']
-        # trying to find that class in the nnunetv2.imageio module
+
         try:
             ret = recursive_find_reader_writer_by_name(ioclass_name)
             if verbose: print(f'Using {ret} reader/writer')
@@ -43,7 +43,7 @@ def determine_reader_writer_from_file_ending(file_ending: str, example_file: str
     for rw in LIST_OF_IO_CLASSES:
         if file_ending.lower() in rw.supported_file_endings:
             if example_file is not None:
-                # if an example file is provided, try if we can actually read it. If not move on to the next reader
+
                 try:
                     tmp = rw()
                     _ = tmp.read_images((example_file,))

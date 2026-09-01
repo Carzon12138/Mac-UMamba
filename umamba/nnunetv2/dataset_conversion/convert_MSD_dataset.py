@@ -25,7 +25,7 @@ def split_4d_nifti(filename, output_folder):
         spacing = img_itk.GetSpacing()
         origin = img_itk.GetOrigin()
         direction = np.array(img_itk.GetDirection()).reshape(4,4)
-        # now modify these to remove the fourth dimension
+
         spacing = tuple(list(spacing[:-1]))
         origin = tuple(list(origin[:-1]))
         direction = tuple(direction[:-1, :-1].reshape(-1))
@@ -52,11 +52,11 @@ def convert_msd_dataset(source_folder: str, overwrite_target_id: Optional[int] =
     dataset_json = join(source_folder, 'dataset.json')
     assert isfile(dataset_json), f"dataset.json missing in source_folder"
 
-    # infer source dataset id and name
+
     task, dataset_name = os.path.basename(source_folder).split('_')
     task_id = int(task[4:])
 
-    # check if target dataset id is taken
+
     target_id = task_id if overwrite_target_id is None else overwrite_target_id
     existing_datasets = find_candidate_datasets(target_id)
     assert len(existing_datasets) == 0, f"Target dataset id {target_id} is already taken, please consider changing " \
@@ -74,7 +74,7 @@ def convert_msd_dataset(source_folder: str, overwrite_target_id: Optional[int] =
     with multiprocessing.get_context("spawn").Pool(num_processes) as p:
         results = []
 
-        # convert 4d train images
+
         source_images = [i for i in subfiles(imagesTr, suffix='.nii.gz', join=False) if
                          not i.startswith('.') and not i.startswith('_')]
         source_images = [join(imagesTr, i) for i in source_images]
@@ -85,7 +85,7 @@ def convert_msd_dataset(source_folder: str, overwrite_target_id: Optional[int] =
             )
         )
 
-        # convert 4d test images
+
         source_images = [i for i in subfiles(imagesTs, suffix='.nii.gz', join=False) if
                          not i.startswith('.') and not i.startswith('_')]
         source_images = [join(imagesTs, i) for i in source_images]
@@ -96,7 +96,7 @@ def convert_msd_dataset(source_folder: str, overwrite_target_id: Optional[int] =
             )
         )
 
-        # copy segmentations
+
         source_images = [i for i in subfiles(labelsTr, suffix='.nii.gz', join=False) if
                          not i.startswith('.') and not i.startswith('_')]
         for s in source_images:

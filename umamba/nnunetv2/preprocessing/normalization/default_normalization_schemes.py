@@ -34,10 +34,10 @@ class ZScoreNormalization(ImageNormalization):
         """
         image = image.astype(self.target_dtype)
         if self.use_mask_for_norm is not None and self.use_mask_for_norm:
-            # negative values in the segmentation encode the 'outside' region (think zero values around the brain as
-            # in BraTS). We want to run the normalization only in the brain region, so we need to mask the image.
-            # The default nnU-net sets use_mask_for_norm to True if cropping to the nonzero region substantially
-            # reduced the image size.
+
+
+
+
             mask = seg >= 0
             mean = image[mask].mean()
             std = image[mask].std()
@@ -92,4 +92,3 @@ class RGBTo01Normalization(ImageNormalization):
         image = image.astype(self.target_dtype)
         image = image / 255.
         return image
-

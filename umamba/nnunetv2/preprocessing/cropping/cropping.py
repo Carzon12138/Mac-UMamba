@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# Hello! crop_to_nonzero is the function you are looking for. Ignore the rest.
+
 from acvl_utils.cropping_and_padding.bounding_boxes import get_bbox_from_mask, crop_to_bbox, bounding_box_to_slice
 
 
@@ -47,5 +47,3 @@ def crop_to_nonzero(data, seg=None, nonzero_label=-1):
         nonzero_mask[nonzero_mask > 0] = 0
         seg = nonzero_mask
     return data, seg, bbox
-
-

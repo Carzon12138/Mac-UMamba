@@ -56,8 +56,8 @@ class nnUNetPredictor(object):
         self.use_gaussian = use_gaussian
         self.use_mirroring = use_mirroring
         if device.type == 'cuda':
-            # device = torch.device(type='cuda', index=0)  # set the desired GPU with CUDA_VISIBLE_DEVICES!
-            # why would I ever want to do that. Stupid dobby. This kills DDP inference...
+
+
             pass
         if device.type != 'cuda':
             print(f'perform_everything_on_device=True is only supported for cuda devices! Setting this to False')
@@ -95,7 +95,7 @@ class nnUNetPredictor(object):
             parameters.append(checkpoint['network_weights'])
 
         configuration_manager = plans_manager.get_configuration(configuration_name)
-        # restore network
+
         num_input_channels = determine_num_input_channels(plans_manager, configuration_manager, dataset_json)
         trainer_class = recursive_find_python_class(join(nnunetv2.__path__[0], "training", "nnUNetTrainer"),
                                                     trainer_name, 'nnunetv2.training.nnUNetTrainer')
@@ -173,7 +173,7 @@ class nnUNetPredictor(object):
 
         seg_from_prev_stage_files = [join(folder_with_segs_from_prev_stage, i + self.dataset_json['file_ending']) if
                                      folder_with_segs_from_prev_stage is not None else None for i in caseids]
-        # remove already predicted files form the lists
+
         if not overwrite and output_filename_truncated is not None:
             tmp = [isfile(i + self.dataset_json['file_ending']) for i in output_filename_truncated]
             if save_probabilities:
@@ -209,31 +209,31 @@ class nnUNetPredictor(object):
         else:
             output_folder = None
 
-        ########################
-        # let's store the input arguments so that its clear what was used to generate the prediction
+
+
         if output_folder is not None:
             my_init_kwargs = {}
             for k in inspect.signature(self.predict_from_files).parameters.keys():
                 my_init_kwargs[k] = locals()[k]
             my_init_kwargs = deepcopy(
-                my_init_kwargs)  # let's not unintentionally change anything in-place. Take this as a
+                my_init_kwargs)
             recursive_fix_for_json_export(my_init_kwargs)
             maybe_mkdir_p(output_folder)
             save_json(my_init_kwargs, join(output_folder, 'predict_from_raw_data_args.json'))
 
-            # we need these two if we want to do things with the predictions like for example apply postprocessing
+
             save_json(self.dataset_json, join(output_folder, 'dataset.json'), sort_keys=False)
             save_json(self.plans_manager.plans, join(output_folder, 'plans.json'), sort_keys=False)
-        #######################
 
-        # check if we need a prediction from the previous stage
+
+
         if self.configuration_manager.previous_stage_name is not None:
             assert folder_with_segs_from_prev_stage is not None, \
                 f'The requested configuration is a cascaded network. It requires the segmentations of the previous ' \
                 f'stage ({self.configuration_manager.previous_stage_name}) as input. Please provide the folder where' \
                 f' they are located via folder_with_segs_from_prev_stage'
 
-        # sort out input and output filenames
+
         list_of_lists_or_source_folder, output_filename_truncated, seg_from_prev_stage_files = \
             self._manage_input_and_output_lists(list_of_lists_or_source_folder,
                                                 output_folder_or_list_of_truncated_output_files,
@@ -258,19 +258,19 @@ class nnUNetPredictor(object):
                                                 output_filenames_truncated, self.plans_manager, self.dataset_json,
                                                 self.configuration_manager, num_processes, self.device.type == 'cuda',
                                                 self.verbose_preprocessing)
-        # preprocessor = self.configuration_manager.preprocessor_class(verbose=self.verbose_preprocessing)
-        # # hijack batchgenerators, yo
-        # # we use the multiprocessing of the batchgenerators dataloader to handle all the background worker stuff. This
-        # # way we don't have to reinvent the wheel here.
-        # num_processes = max(1, min(num_processes, len(input_list_of_lists)))
-        # ppa = PreprocessAdapter(input_list_of_lists, seg_from_prev_stage_files, preprocessor,
-        #                         output_filenames_truncated, self.plans_manager, self.dataset_json,
-        #                         self.configuration_manager, num_processes)
-        # if num_processes == 0:
-        #     mta = SingleThreadedAugmenter(ppa, None)
-        # else:
-        #     mta = MultiThreadedAugmenter(ppa, None, num_processes, 1, None, pin_memory=pin_memory)
-        # return mta
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def get_data_iterator_from_raw_npy_data(self,
                                             image_or_list_of_images: Union[np.ndarray, List[np.ndarray]],
@@ -357,20 +357,20 @@ class nnUNetPredictor(object):
 
                 properties = preprocessed['data_properties']
 
-                # let's not get into a runaway situation where the GPU predicts so fast that the disk has to b swamped with
-                # npy files
+
+
                 proceed = not check_workers_alive_and_busy(export_pool, worker_list, r, allowed_num_queued=2)
                 while not proceed:
-                    # print('sleeping')
+
                     sleep(0.1)
                     proceed = not check_workers_alive_and_busy(export_pool, worker_list, r, allowed_num_queued=2)
 
                 prediction = self.predict_logits_from_preprocessed_data(data).cpu()
 
                 if ofile is not None:
-                    # this needs to go into background processes
-                    # export_prediction_from_logits(prediction, properties, configuration_manager, plans_manager,
-                    #                               dataset_json, ofile, save_probabilities)
+
+
+
                     print('sending off prediction to background worker for resampling and export')
                     r.append(
                         export_pool.starmap_async(
@@ -380,10 +380,10 @@ class nnUNetPredictor(object):
                         )
                     )
                 else:
-                    # convert_predicted_logits_to_segmentation_with_correct_shape(prediction, plans_manager,
-                    #                                                             configuration_manager, label_manager,
-                    #                                                             properties,
-                    #                                                             save_probabilities)
+
+
+
+
                     print('sending off prediction to background worker for resampling')
                     r.append(
                         export_pool.starmap_async(
@@ -403,9 +403,9 @@ class nnUNetPredictor(object):
         if isinstance(data_iterator, MultiThreadedAugmenter):
             data_iterator._finish()
 
-        # clear lru cache
+
         compute_gaussian.cache_clear()
-        # clear device cache
+
         empty_cache(self.device)
         return ret
 
@@ -461,15 +461,15 @@ class nnUNetPredictor(object):
 
             for params in self.list_of_parameters:
 
-                # messing with state dict names...
+
                 if not isinstance(self.network, OptimizedModule):
                     self.network.load_state_dict(params)
                 else:
                     self.network._orig_mod.load_state_dict(params)
 
-                # why not leave prediction on device if perform_everything_on_device? Because this may cause the
-                # second iteration to crash due to OOM. Grabbing tha twith try except cause way more bloated code than
-                # this actually saves computation time
+
+
+
                 if prediction is None:
                     prediction = self.predict_sliding_window_return_logits(data).to('cpu')
                 else:
@@ -522,8 +522,8 @@ class nnUNetPredictor(object):
         prediction = self.network(x)
 
         if mirror_axes is not None:
-            # check for invalid numbers in mirror_axes
-            # x should be 5d for 3d images and 4d for 2d. so the max value of mirror_axes cannot exceed len(x.shape) - 3
+
+
             assert max(mirror_axes) <= x.ndim - 3, 'mirror_axes does not match the dimension of the input!'
 
             axes_combinations = [
@@ -542,12 +542,12 @@ class nnUNetPredictor(object):
         results_device = self.device if do_on_device else torch.device('cpu')
         empty_cache(self.device)
 
-        # move data to device
+
         if self.verbose:
             print(f'move image to device {results_device}')
         data = data.to(results_device)
 
-        # preallocate arrays
+
         if self.verbose:
             print(f'preallocating results arrays on device {results_device}')
         predicted_logits = torch.zeros((self.label_manager.num_segmentation_heads, *data.shape[1:]),
@@ -571,7 +571,7 @@ class nnUNetPredictor(object):
             n_predictions[sl[1:]] += (gaussian if self.use_gaussian else 1)
 
         predicted_logits /= n_predictions
-        # check for infs
+
         if torch.any(torch.isinf(predicted_logits)):
             raise RuntimeError('Encountered inf in predicted array. Aborting... If this problem persists, '
                                'reduce value_scaling_factor in compute_gaussian or increase the dtype of '
@@ -586,12 +586,12 @@ class nnUNetPredictor(object):
 
         empty_cache(self.device)
 
-        # Autocast is a little bitch.
-        # If the device_type is 'cpu' then it's slow as heck on some CPUs (no auto bfloat16 support detection)
-        # and needs to be disabled.
-        # If the device_type is 'mps' then it will complain that mps is not implemented, even if enabled=False
-        # is set. Whyyyyyyy. (this is why we don't make use of enabled=False)
-        # So autocast will only be active if we have a cuda device.
+
+
+
+
+
+
         with torch.no_grad():
             with torch.autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
                 assert input_image.ndim == 4, 'input_image must be a 4D np.ndarray or torch.Tensor (c, x, y, z)'
@@ -600,7 +600,7 @@ class nnUNetPredictor(object):
                 if self.verbose: print("step_size:", self.tile_step_size)
                 if self.verbose: print("mirror_axes:", self.allowed_mirroring_axes if self.use_mirroring else None)
 
-                # if input_image is smaller than tile_size we need to pad it to tile_size.
+
                 data, slicer_revert_padding = pad_nd_image(input_image, self.configuration_manager.patch_size,
                                                            'constant', {'value': 0}, True,
                                                            None)
@@ -608,7 +608,7 @@ class nnUNetPredictor(object):
                 slicers = self._internal_get_sliding_window_slicers(data.shape[1:])
 
                 if self.perform_everything_on_device and self.device != 'cpu':
-                    # we need to try except here because we can run OOM in which case we need to fall back to CPU as a results device
+
                     try:
                         predicted_logits = self._internal_predict_sliding_window_return_logits(data, slicers, self.perform_everything_on_device)
                     except RuntimeError:
@@ -619,7 +619,7 @@ class nnUNetPredictor(object):
                     predicted_logits = self._internal_predict_sliding_window_return_logits(data, slicers, self.perform_everything_on_device)
 
                 empty_cache(self.device)
-                # revert padding
+
                 predicted_logits = predicted_logits[tuple([slice(None), *slicer_revert_padding[1:]])]
         return predicted_logits
 
@@ -690,12 +690,12 @@ def predict_entry_point_modelfolder():
     assert args.device in ['cpu', 'cuda',
                            'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
     if args.device == 'cpu':
-        # let's allow torch to use hella threads
+
         import multiprocessing
         torch.set_num_threads(multiprocessing.cpu_count())
         device = torch.device('cpu')
     elif args.device == 'cuda':
-        # multithreading in torch doesn't help nnU-Net if run on GPU
+
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
         device = torch.device('cuda')
@@ -773,7 +773,7 @@ def predict_entry_point():
                         help='If multiple nnUNetv2_predict exist, which one is this? IDs start with 0 can end with '
                              'num_parts - 1. So when you submit 5 nnUNetv2_predict calls you need to set -num_parts '
                              '5 and use -part_id 0, 1, 2, 3 and 4. Simple, right? Note: You are yourself responsible '
-                             'to make these run on separate GPUs! Use CUDA_VISIBLE_DEVICES (google, yo!)')
+                             'to make these run on separate GPUs! Use CUDA_VISIBLE_DEVICES.')
     parser.add_argument('-device', type=str, default='cuda', required=False,
                         help="Use this to set the device the inference should run with. Available options are 'cuda' "
                              "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
@@ -797,18 +797,18 @@ def predict_entry_point():
     if not isdir(args.o):
         maybe_mkdir_p(args.o)
 
-    # slightly passive aggressive haha
+
     assert args.part_id < args.num_parts, 'Do you even read the documentation? See nnUNetv2_predict -h.'
 
     assert args.device in ['cpu', 'cuda',
                            'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
     if args.device == 'cpu':
-        # let's allow torch to use hella threads
+
         import multiprocessing
         torch.set_num_threads(multiprocessing.cpu_count())
         device = torch.device('cpu')
     elif args.device == 'cuda':
-        # multithreading in torch doesn't help nnU-Net if run on GPU
+
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
         device = torch.device('cuda')
@@ -835,28 +835,28 @@ def predict_entry_point():
                                  folder_with_segs_from_prev_stage=args.prev_stage_predictions,
                                  num_parts=args.num_parts,
                                  part_id=args.part_id)
-    # r = predict_from_raw_data(args.i,
-    #                           args.o,
-    #                           model_folder,
-    #                           args.f,
-    #                           args.step_size,
-    #                           use_gaussian=True,
-    #                           use_mirroring=not args.disable_tta,
-    #                           perform_everything_on_device=True,
-    #                           verbose=args.verbose,
-    #                           save_probabilities=args.save_probabilities,
-    #                           overwrite=not args.continue_prediction,
-    #                           checkpoint_name=args.chk,
-    #                           num_processes_preprocessing=args.npp,
-    #                           num_processes_segmentation_export=args.nps,
-    #                           folder_with_segs_from_prev_stage=args.prev_stage_predictions,
-    #                           num_parts=args.num_parts,
-    #                           part_id=args.part_id,
-    #                           device=device)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
-    # predict a bunch of files
+
     from nnunetv2.paths import nnUNet_results, nnUNet_raw
     predictor = nnUNetPredictor(
         tile_step_size=0.5,
@@ -879,33 +879,10 @@ if __name__ == '__main__':
                                  num_processes_preprocessing=2, num_processes_segmentation_export=2,
                                  folder_with_segs_from_prev_stage=None, num_parts=1, part_id=0)
 
-    # predict a numpy array
+
     from nnunetv2.imageio.simpleitk_reader_writer import SimpleITKIO
     img, props = SimpleITKIO().read_images([join(nnUNet_raw, 'Dataset003_Liver/imagesTr/liver_63_0000.nii.gz')])
     ret = predictor.predict_single_npy_array(img, props, None, None, False)
 
     iterator = predictor.get_data_iterator_from_raw_npy_data([img], None, [props], None, 1)
     ret = predictor.predict_from_data_iterator(iterator, False, 1)
-
-
-    # predictor = nnUNetPredictor(
-    #     tile_step_size=0.5,
-    #     use_gaussian=True,
-    #     use_mirroring=True,
-    #     perform_everything_on_device=True,
-    #     device=torch.device('cuda', 0),
-    #     verbose=False,
-    #     allow_tqdm=True
-    #     )
-    # predictor.initialize_from_trained_model_folder(
-    #     join(nnUNet_results, 'Dataset003_Liver/nnUNetTrainer__nnUNetPlans__3d_cascade_fullres'),
-    #     use_folds=(0,),
-    #     checkpoint_name='checkpoint_final.pth',
-    # )
-    # predictor.predict_from_files(join(nnUNet_raw, 'Dataset003_Liver/imagesTs'),
-    #                              join(nnUNet_raw, 'Dataset003_Liver/imagesTs_predCascade'),
-    #                              save_probabilities=False, overwrite=False,
-    #                              num_processes_preprocessing=2, num_processes_segmentation_export=2,
-    #                              folder_with_segs_from_prev_stage='/media/isensee/data/nnUNet_raw/Dataset003_Liver/imagesTs_predlowres',
-    #                              num_parts=1, part_id=0)
-

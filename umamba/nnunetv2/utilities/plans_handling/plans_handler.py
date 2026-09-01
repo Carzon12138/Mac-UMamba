@@ -19,7 +19,7 @@ from nnunetv2.utilities.find_class_by_name import recursive_find_python_class
 from nnunetv2.utilities.label_handling.label_handling import get_labelmanager_class_from_plans
 
 
-# see https://adamj.eu/tech/2021/05/13/python-type-hints-how-to-fix-circular-imports/
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -296,12 +296,12 @@ if __name__ == '__main__':
     from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
 
     plans = load_json(join(nnUNet_preprocessed, maybe_convert_to_dataset_name(3), 'nnUNetPlans.json'))
-    # build new configuration that inherits from 3d_fullres
+
     plans['configurations']['3d_fullres_bs4'] = {
         'batch_size': 4,
         'inherits_from': '3d_fullres'
     }
-    # now get plans and configuration managers
+
     plans_manager = PlansManager(plans)
     configuration_manager = plans_manager.get_configuration('3d_fullres_bs4')
-    print(configuration_manager)  # look for batch size 4
+    print(configuration_manager)

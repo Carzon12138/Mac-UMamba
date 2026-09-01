@@ -33,9 +33,9 @@ class DatasetFingerprintExtractor(object):
         self.dataset_json = load_json(join(self.input_folder, 'dataset.json'))
         self.dataset = get_filenames_of_train_images_and_targets(self.input_folder, self.dataset_json)
 
-        # We don't want to use all foreground voxels because that can accumulate a lot of data (out of memory). It is
-        # also not critically important to get all pixels as long as there are enough. Let's use 10e7 voxels in total
-        # (for the entire dataset)
+
+
+
         self.num_foreground_voxels_for_intensitystats = 10e7
 
     @staticmethod
@@ -53,18 +53,18 @@ class DatasetFingerprintExtractor(object):
         rs = np.random.RandomState(seed)
 
         intensities_per_channel = []
-        # we don't use the intensity_statistics_per_channel at all, it's just something that might be nice to have
+
         intensity_statistics_per_channel = []
 
-        # segmentation is 4d: 1,x,y,z. We need to remove the empty dimension for the following code to work
+
         foreground_mask = segmentation[0] > 0
 
         for i in range(len(images)):
             foreground_pixels = images[i][foreground_mask]
             num_fg = len(foreground_pixels)
-            # sample with replacement so that we don't get issues with cases that have less than num_samples
-            # foreground_pixels. We could also just sample less in those cases but that would than cause these
-            # training cases to be underrepresented
+
+
+
             intensities_per_channel.append(
                 rs.choice(foreground_pixels, num_samples, replace=True) if num_fg > 0 else [])
             intensity_statistics_per_channel.append({
@@ -86,10 +86,10 @@ class DatasetFingerprintExtractor(object):
         images, properties_images = rw.read_images(image_files)
         segmentation, properties_seg = rw.read_seg(segmentation_file)
 
-        # we no longer crop and save the cropped images before this is run. Instead we run the cropping on the fly.
-        # Downside is that we need to do this twice (once here and once during preprocessing). Upside is that we don't
-        # need to save the cropped data anymore. Given that cropping is not too expensive it makes sense to do it this
-        # way. This is only possible because we are now using our new input/output interface.
+
+
+
+
         data_cropped, seg_cropped, bbox = crop_to_nonzero(images, segmentation)
 
         foreground_intensities_per_channel, foreground_intensity_stats_per_channel = \
@@ -105,18 +105,18 @@ class DatasetFingerprintExtractor(object):
                relative_size_after_cropping
 
     def run(self, overwrite_existing: bool = False) -> dict:
-        # we do not save the properties file in self.input_folder because that folder might be read-only. We can only
-        # reliably write in nnUNet_preprocessed and nnUNet_results, so nnUNet_preprocessed it is
+
+
         preprocessed_output_folder = join(nnUNet_preprocessed, self.dataset_name)
         maybe_mkdir_p(preprocessed_output_folder)
         properties_file = join(preprocessed_output_folder, 'dataset_fingerprint.json')
 
         if not isfile(properties_file) or overwrite_existing:
             reader_writer_class = determine_reader_writer_from_dataset_json(self.dataset_json,
-                                                                            # yikes. Rip the following line
+
                                                                             self.dataset[self.dataset.keys().__iter__().__next__()]['images'][0])
 
-            # determine how many foreground voxels we need to sample per training case
+
             num_foreground_samples_per_case = int(self.num_foreground_voxels_for_intensitystats //
                                                   len(self.dataset))
 
@@ -127,8 +127,8 @@ class DatasetFingerprintExtractor(object):
                                              ((self.dataset[k]['images'], self.dataset[k]['label'], reader_writer_class,
                                                num_foreground_samples_per_case),)))
                 remaining = list(range(len(self.dataset)))
-                # p is pretty nifti. If we kill workers they just respawn but don't do any work.
-                # So we need to store the original pool of workers.
+
+
                 workers = [j for j in p._pool]
                 with tqdm(desc=None, total=len(self.dataset), disable=self.verbose) as pbar:
                     while len(remaining) > 0:
@@ -147,18 +147,18 @@ class DatasetFingerprintExtractor(object):
                         remaining = [i for i in remaining if i not in done]
                         sleep(0.1)
 
-            # results = ptqdm(DatasetFingerprintExtractor.analyze_case,
-            #                 (training_images_per_case, training_labels_per_case),
-            #                 processes=self.num_processes, zipped=True, reader_writer_class=reader_writer_class,
-            #                 num_samples=num_foreground_samples_per_case, disable=self.verbose)
+
+
+
+
             results = [i.get()[0] for i in r]
 
             shapes_after_crop = [r[0] for r in results]
             spacings = [r[1] for r in results]
             foreground_intensities_per_channel = [np.concatenate([r[2][i] for r in results]) for i in
                                                   range(len(results[0][2]))]
-            # we drop this so that the json file is somewhat human readable
-            # foreground_intensity_stats_by_case_and_modality = [r[3] for r in results]
+
+
             median_relative_size_after_cropping = np.median([r[4] for r in results], 0)
 
             num_channels = len(self.dataset_json['channel_names'].keys()

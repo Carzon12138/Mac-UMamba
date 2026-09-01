@@ -19,7 +19,7 @@ class nnUNetTrainerBenchmark_5epochs(nnUNetTrainer):
         pass
 
     def save_checkpoint(self, filename: str) -> None:
-        # do not trust people to remember that self.disable_checkpointing must be True for this trainer
+
         pass
 
     def run_training(self):
@@ -52,7 +52,7 @@ class nnUNetTrainerBenchmark_5epochs(nnUNetTrainer):
                 old_results = load_json(benchmark_result_file)
             else:
                 old_results = {}
-            # generate some unique key
+
             my_key = f"{cudnn_version}__{torch_version.replace(' ', '')}__{gpu_name.replace(' ', '')}__gpus_{num_gpus}"
             old_results[my_key] = {
                 'torch_version': torch_version,

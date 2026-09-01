@@ -35,7 +35,7 @@ class nnUNetDataset(object):
         (not sure why you'd want to do that though. So don't do it)
         """
         super().__init__()
-        # print('loading dataset')
+
         if case_identifiers is None:
             case_identifiers = get_case_identifiers(folder)
         case_identifiers.sort()
@@ -54,7 +54,7 @@ class nnUNetDataset(object):
 
         self.keep_files_open = ('nnUNet_keep_files_open' in os.environ.keys()) and \
                                (os.environ['nnUNet_keep_files_open'].lower() in ('true', '1', 't'))
-        # print(f'nnUNetDataset.keep_files_open: {self.keep_files_open}')
+
 
     def __getitem__(self, key):
         ret = {**self.dataset[key]}
@@ -81,23 +81,23 @@ class nnUNetDataset(object):
         entry = self[key]
         if 'open_data_file' in entry.keys():
             data = entry['open_data_file']
-            # print('using open data file')
+
         elif isfile(entry['data_file'][:-4] + ".npy"):
             data = np.load(entry['data_file'][:-4] + ".npy", 'r')
             if self.keep_files_open:
                 self.dataset[key]['open_data_file'] = data
-                # print('saving open data file')
+
         else:
             data = np.load(entry['data_file'])['data']
 
         if 'open_seg_file' in entry.keys():
             seg = entry['open_seg_file']
-            # print('using open data file')
+
         elif isfile(entry['data_file'][:-4] + "_seg.npy"):
             seg = np.load(entry['data_file'][:-4] + "_seg.npy", 'r')
             if self.keep_files_open:
                 self.dataset[key]['open_seg_file'] = seg
-                # print('saving open seg file')
+
         else:
             seg = np.load(entry['data_file'])['seg']
 
@@ -112,35 +112,34 @@ class nnUNetDataset(object):
 
 
 if __name__ == '__main__':
-    # this is a mini test. Todo: We can move this to tests in the future (requires simulated dataset)
+
 
     folder = '/media/fabian/data/nnUNet_preprocessed/Dataset003_Liver/3d_lowres'
-    ds = nnUNetDataset(folder, num_images_properties_loading_threshold=0) # this should not load the properties!
-    # this SHOULD HAVE the properties
-    ks = ds['liver_0'].keys()
-    assert 'properties' in ks
-    # amazing. I am the best.
+    ds = nnUNetDataset(folder, num_images_properties_loading_threshold=0)
 
-    # this should have the properties
-    ds = nnUNetDataset(folder, num_images_properties_loading_threshold=1000)
-    # now rename the properties file so that it does not exist anymore
-    shutil.move(join(folder, 'liver_0.pkl'), join(folder, 'liver_XXX.pkl'))
-    # now we should still be able to access the properties because they have already been loaded
     ks = ds['liver_0'].keys()
     assert 'properties' in ks
-    # move file back
+
+
+
+    ds = nnUNetDataset(folder, num_images_properties_loading_threshold=1000)
+
+    shutil.move(join(folder, 'liver_0.pkl'), join(folder, 'liver_XXX.pkl'))
+
+    ks = ds['liver_0'].keys()
+    assert 'properties' in ks
+
     shutil.move(join(folder, 'liver_XXX.pkl'), join(folder, 'liver_0.pkl'))
 
-    # this should not have the properties
+
     ds = nnUNetDataset(folder, num_images_properties_loading_threshold=0)
-    # now rename the properties file so that it does not exist anymore
+
     shutil.move(join(folder, 'liver_0.pkl'), join(folder, 'liver_XXX.pkl'))
-    # now this should crash
+
     try:
         ks = ds['liver_0'].keys()
         raise RuntimeError('we should not have come here')
     except FileNotFoundError:
         print('all good')
-        # move file back
-        shutil.move(join(folder, 'liver_XXX.pkl'), join(folder, 'liver_0.pkl'))
 
+        shutil.move(join(folder, 'liver_XXX.pkl'), join(folder, 'liver_0.pkl'))

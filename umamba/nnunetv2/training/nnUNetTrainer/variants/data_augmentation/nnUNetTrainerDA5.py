@@ -39,10 +39,10 @@ class nnUNetTrainerDA5(nnUNetTrainer):
         """
         patch_size = self.configuration_manager.patch_size
         dim = len(patch_size)
-        # todo rotation should be defined dynamically based on patch size (more isotropic patch sizes = more rotation)
+
         if dim == 2:
             do_dummy_2d_data_aug = False
-            # todo revisit this parametrization
+
             if max(patch_size) / min(patch_size) > 1.5:
                 rotation_for_DA = {
                     'x': (-15. / 360 * 2. * np.pi, 15. / 360 * 2. * np.pi),
@@ -57,11 +57,11 @@ class nnUNetTrainerDA5(nnUNetTrainer):
                 }
             mirror_axes = (0, 1)
         elif dim == 3:
-            # todo this is not ideal. We could also have patch_size (64, 16, 128) in which case a full 180deg 2d rot would be bad
-            # order of the axes is determined by spacing, not image size
+
+
             do_dummy_2d_data_aug = (max(patch_size) / patch_size[0]) > ANISO_THRESHOLD
             if do_dummy_2d_data_aug:
-                # why do we rotate 180 deg here all the time? We should also restrict it
+
                 rotation_for_DA = {
                     'x': (-180. / 360 * 2. * np.pi, 180. / 360 * 2. * np.pi),
                     'y': (0, 0),
@@ -77,8 +77,8 @@ class nnUNetTrainerDA5(nnUNetTrainer):
         else:
             raise RuntimeError()
 
-        # todo this function is stupid. It doesn't even use the correct scale range (we keep things as they were in the
-        #  old nnunet for now)
+
+
         initial_patch_size = get_patch_size(patch_size[-dim:],
                                             *rotation_for_DA.values(),
                                             (0.7, 1.43))
@@ -292,7 +292,7 @@ class nnUNetTrainerDA5(nnUNetTrainer):
         tr_transforms.append(RenameTransform('seg', 'target', True))
 
         if regions is not None:
-            # the ignore label must also be converted
+
             tr_transforms.append(ConvertSegmentationToRegionsTransform(list(regions) + [ignore_label]
                                                                        if ignore_label is not None else regions,
                                                                        'target', 'target'))
@@ -310,19 +310,19 @@ class nnUNetTrainerDA5ord0(nnUNetTrainerDA5):
         """
         changed order_resampling_data, order_resampling_seg
         """
-        # we use the patch size to determine whether we need 2D or 3D dataloaders. We also use it to determine whether
-        # we need to use dummy 2D augmentation (in case of 3D training) and what our initial patch size should be
+
+
         patch_size = self.configuration_manager.patch_size
         dim = len(patch_size)
 
-        # needed for deep supervision: how much do we need to downscale the segmentation targets for the different
-        # outputs?
+
+
         deep_supervision_scales = self._get_deep_supervision_scales()
 
         rotation_for_DA, do_dummy_2d_data_aug, initial_patch_size, mirror_axes = \
             self.configure_rotation_dummyDA_mirroring_and_inital_patch_size()
 
-        # training pipeline
+
         tr_transforms = self.get_training_transforms(
             patch_size, rotation_for_DA, deep_supervision_scales, mirror_axes, do_dummy_2d_data_aug,
             order_resampling_data=0, order_resampling_seg=0,
@@ -331,7 +331,7 @@ class nnUNetTrainerDA5ord0(nnUNetTrainerDA5):
             regions=self.label_manager.foreground_regions if self.label_manager.has_regions else None,
             ignore_label=self.label_manager.ignore_label)
 
-        # validation pipeline
+
         val_transforms = self.get_validation_transforms(deep_supervision_scales,
                                                         is_cascaded=self.is_cascaded,
                                                         foreground_labels=self.label_manager.all_labels,
@@ -371,19 +371,19 @@ class nnUNetTrainerDA5Segord0(nnUNetTrainerDA5):
         """
         changed order_resampling_data, order_resampling_seg
         """
-        # we use the patch size to determine whether we need 2D or 3D dataloaders. We also use it to determine whether
-        # we need to use dummy 2D augmentation (in case of 3D training) and what our initial patch size should be
+
+
         patch_size = self.configuration_manager.patch_size
         dim = len(patch_size)
 
-        # needed for deep supervision: how much do we need to downscale the segmentation targets for the different
-        # outputs?
+
+
         deep_supervision_scales = self._get_deep_supervision_scales()
 
         rotation_for_DA, do_dummy_2d_data_aug, initial_patch_size, mirror_axes = \
             self.configure_rotation_dummyDA_mirroring_and_inital_patch_size()
 
-        # training pipeline
+
         tr_transforms = self.get_training_transforms(
             patch_size, rotation_for_DA, deep_supervision_scales, mirror_axes, do_dummy_2d_data_aug,
             order_resampling_data=3, order_resampling_seg=0,
@@ -392,7 +392,7 @@ class nnUNetTrainerDA5Segord0(nnUNetTrainerDA5):
             regions=self.label_manager.foreground_regions if self.label_manager.has_regions else None,
             ignore_label=self.label_manager.ignore_label)
 
-        # validation pipeline
+
         val_transforms = self.get_validation_transforms(deep_supervision_scales,
                                                         is_cascaded=self.is_cascaded,
                                                         foreground_labels=self.label_manager.all_labels,

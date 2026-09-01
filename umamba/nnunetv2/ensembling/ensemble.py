@@ -20,7 +20,7 @@ def average_probabilities(list_of_files: List[str]) -> np.ndarray:
     for f in list_of_files:
         if avg is None:
             avg = np.load(f)['probabilities']
-            # maybe increase precision to prevent rounding errors
+
             if avg.dtype != np.float32:
                 avg = avg.astype(np.float32)
         else:
@@ -35,9 +35,9 @@ def merge_files(list_of_files,
                 image_reader_writer: BaseReaderWriter,
                 label_manager: LabelManager,
                 save_probabilities: bool = False):
-    # load the pkl file associated with the first file in list_of_files
+
     properties = load_pickle(list_of_files[0][:-4] + '.pkl')
-    # load and average predictions
+
     probabilities = average_probabilities(list_of_files)
     segmentation = label_manager.convert_logits_to_segmentation(probabilities)
     image_reader_writer.write_seg(segmentation, output_filename_truncated + output_file_ending, properties)
@@ -78,9 +78,9 @@ def ensemble_folders(list_of_input_folders: List[str],
 
     plans_manager = PlansManager(plans)
 
-    # now collect the files in each of the folders and enforce that all files are present in all folders
+
     files_per_folder = [set(subfiles(i, suffix='.npz', join=False)) for i in list_of_input_folders]
-    # first build a set with all files
+
     s = deepcopy(files_per_folder[0])
     for f in files_per_folder[1:]:
         s.update(f)
@@ -136,7 +136,7 @@ def ensemble_crossvalidations(list_of_trained_model_folders: List[str],
     dataset_json = load_json(join(list_of_trained_model_folders[0], 'dataset.json'))
     plans_manager = PlansManager(join(list_of_trained_model_folders[0], 'plans.json'))
 
-    # first collect all unique filenames
+
     files_per_folder = {}
     unique_filenames = set()
     for tr in list_of_trained_model_folders:
@@ -152,7 +152,7 @@ def ensemble_crossvalidations(list_of_trained_model_folders: List[str],
             files_per_folder[tr][f] = subfiles(join(tr, f'fold_{f}', 'validation'), suffix='.npz', join=False)
             unique_filenames.update(files_per_folder[tr][f])
 
-    # verify that all trained_model_folders have all predictions
+
     ok = True
     for tr, fi in files_per_folder.items():
         all_files_here = set()
@@ -165,13 +165,13 @@ def ensemble_crossvalidations(list_of_trained_model_folders: List[str],
         if not ok:
             raise RuntimeError('There were missing files, see print statements above this one')
 
-    # now we need to collect where these files are
+
     file_mapping = []
     for tr in list_of_trained_model_folders:
         file_mapping.append({})
         for f in folds:
             for fi in files_per_folder[tr][f]:
-                # check for duplicates
+
                 assert fi not in file_mapping[-1].keys(), f"Duplicate detected. Case {fi} is present in more than " \
                                                           f"one fold of model {tr}."
                 file_mapping[-1][fi] = join(tr, f'fold_{f}', 'validation', fi)

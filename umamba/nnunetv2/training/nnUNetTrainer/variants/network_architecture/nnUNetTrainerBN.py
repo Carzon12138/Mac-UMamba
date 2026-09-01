@@ -53,7 +53,7 @@ class nnUNetTrainerBN(nnUNetTrainer):
             if network_class != ResidualEncoderUNet else 'n_blocks_per_stage': configuration_manager.n_conv_per_stage_encoder,
             'n_conv_per_stage_decoder': configuration_manager.n_conv_per_stage_decoder
         }
-        # network class name!!
+
         model = network_class(
             input_channels=num_input_channels,
             n_stages=num_stages,

@@ -1,5 +1,5 @@
 from nnunetv2.training.nnUNetTrainer.nnUNetTrainer import nnUNetTrainer
-# from nnunetv2.training.nnUNetTrainer.nnUNetTrainer1 import nnUNetTrainer
+
 from nnunetv2.utilities.plans_handling.plans_handler import ConfigurationManager, PlansManager
 from torch import nn
 from nnunetv2.nets.MACUmamba import (get_umamba_enc_2d_from_plans)

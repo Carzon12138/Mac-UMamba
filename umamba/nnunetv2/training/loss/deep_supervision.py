@@ -19,8 +19,8 @@ class DeepSupervisionWrapper(nn.Module):
     def forward(self, *args):
         assert all([isinstance(i, (tuple, list)) for i in args]), \
             f"all args must be either tuple or list, got {[type(i) for i in args]}"
-        # we could check for equal lengths here as well, but we really shouldn't overdo it with checks because
-        # this code is executed a lot of times!
+
+
 
         if self.weight_factors is None:
             weights = (1, ) * len(args[0])

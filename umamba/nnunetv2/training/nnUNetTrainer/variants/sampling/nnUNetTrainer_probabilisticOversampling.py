@@ -72,5 +72,3 @@ class nnUNetTrainer_probabilisticOversampling_010(nnUNetTrainer_probabilisticOve
                  device: torch.device = torch.device('cuda')):
         super().__init__(plans, configuration, fold, dataset_json, unpack_dataset, device)
         self.oversample_foreground_percent = 0.1
-
-

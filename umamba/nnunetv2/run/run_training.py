@@ -35,7 +35,7 @@ def get_trainer_from_args(dataset_name_or_id: Union[int, str],
                           plans_identifier: str = 'nnUNetPlans',
                           use_compressed: bool = False,
                           device: torch.device = torch.device('cuda')):
-    # load nnunet class and do sanity checks
+
     nnunet_trainer = recursive_find_python_class(join(nnunetv2.__path__[0], "training", "nnUNetTrainer"),
                                                 trainer_name, 'nnunetv2.training.nnUNetTrainer')
     if nnunet_trainer is None:
@@ -46,7 +46,7 @@ def get_trainer_from_args(dataset_name_or_id: Union[int, str],
     assert issubclass(nnunet_trainer, nnUNetTrainer), 'The requested nnunet trainer class must inherit from ' \
                                                     'nnUNetTrainer'
 
-    # handle dataset input. If it's an ID we need to convert to int from string
+
     if dataset_name_or_id.startswith('Dataset'):
         pass
     else:
@@ -57,7 +57,7 @@ def get_trainer_from_args(dataset_name_or_id: Union[int, str],
                              f'DatasetXXX_YYY where XXX are the three(!) task ID digits. Your '
                              f'input: {dataset_name_or_id}')
 
-    # initialize nnunet trainer
+
     preprocessed_dataset_folder_base = join(nnUNet_preprocessed, maybe_convert_to_dataset_name(dataset_name_or_id))
     plans_file = join(preprocessed_dataset_folder_base, plans_identifier + '.json')
     plans = load_json(plans_file)
@@ -76,7 +76,7 @@ def maybe_load_checkpoint(nnunet_trainer: nnUNetTrainer, continue_training: bool
         expected_checkpoint_file = join(nnunet_trainer.output_folder, 'checkpoint_final.pth')
         if not isfile(expected_checkpoint_file):
             expected_checkpoint_file = join(nnunet_trainer.output_folder, 'checkpoint_latest.pth')
-        # special case where --c is used to run a previously aborted validation
+
         if not isfile(expected_checkpoint_file):
             expected_checkpoint_file = join(nnunet_trainer.output_folder, 'checkpoint_best.pth')
         if not isfile(expected_checkpoint_file):
@@ -99,7 +99,7 @@ def maybe_load_checkpoint(nnunet_trainer: nnUNetTrainer, continue_training: bool
 
 
 def setup_ddp(rank, world_size):
-    # initialize the process group
+
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
 
@@ -118,7 +118,7 @@ def run_ddp(rank, dataset_name_or_id, configuration, fold, tr, p, use_compressed
     if disable_checkpointing:
         nnunet_trainer.disable_checkpointing = disable_checkpointing
 
-    assert not (c and val), f'Cannot set --c and --val flag at the same time. Dummy.'
+        assert not (c and val), f'Cannot set --c and --val flag at the same time.'
 
     maybe_load_checkpoint(nnunet_trainer, c, val, pretrained_weights)
 
@@ -166,7 +166,7 @@ def run_training(dataset_name_or_id: Union[str, int],
         if 'MASTER_PORT' not in os.environ.keys():
             port = str(find_free_network_port())
             print(f"using port {port}")
-            os.environ['MASTER_PORT'] = port  # str(port)
+            os.environ['MASTER_PORT'] = port
 
         mp.spawn(run_ddp,
                  args=(
@@ -192,7 +192,7 @@ def run_training(dataset_name_or_id: Union[str, int],
         if disable_checkpointing:
             nnunet_trainer.disable_checkpointing = disable_checkpointing
 
-        assert not (continue_training and only_run_validation), f'Cannot set --c and --val flag at the same time. Dummy.'
+        assert not (continue_training and only_run_validation), f'Cannot set --c and --val flag at the same time.'
 
         maybe_load_checkpoint(nnunet_trainer, continue_training, only_run_validation, pretrained_weights)
 
@@ -253,12 +253,12 @@ def run_training_entry():
 
     assert args.device in ['cpu', 'cuda', 'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
     if args.device == 'cpu':
-        # let's allow torch to use hella threads
+
         import multiprocessing
         torch.set_num_threads(multiprocessing.cpu_count())
         device = torch.device('cpu')
     elif args.device == 'cuda':
-        # multithreading in torch doesn't help nnU-Net if run on GPU
+
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
         device = torch.device('cuda')

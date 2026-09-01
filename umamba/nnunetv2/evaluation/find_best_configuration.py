@@ -28,15 +28,15 @@ def filter_available_models(model_dict: Union[List[dict], Tuple[dict, ...]], dat
     for trained_model in model_dict:
         plans_manager = PlansManager(join(nnUNet_preprocessed, maybe_convert_to_dataset_name(dataset_name_or_id),
                                trained_model['plans'] + '.json'))
-        # check if configuration exists
-        # 3d_cascade_fullres and 3d_lowres do not exist for each dataset so we allow them to be absent IF they are not
-        # specified in the plans file
+
+
+
         if trained_model['configuration'] not in plans_manager.available_configurations:
             print(f"Configuration {trained_model['configuration']} not found in plans {trained_model['plans']}.\n"
                   f"Inferred plans file: {join(nnUNet_preprocessed, maybe_convert_to_dataset_name(dataset_name_or_id), trained_model['plans'] + '.json')}.")
             continue
 
-        # check if trained model output folder exists. This is a requirement. No mercy here.
+
         expected_output_folder = get_output_folder(dataset_name_or_id, trained_model['trainer'], trained_model['plans'],
                                                    trained_model['configuration'], fold=None)
         if not isdir(expected_output_folder):
@@ -117,7 +117,7 @@ def find_best_configuration(dataset_name_or_id,
                 ensemble_crossvalidations([output_folder_1, output_folder_2], output_folder_ensemble, folds,
                                           num_processes, overwrite=overwrite)
 
-                # evaluate ensembled predictions
+
                 plans_manager = PlansManager(join(output_folder_1, 'plans.json'))
                 dataset_json = load_json(join(output_folder_1, 'dataset.json'))
                 label_manager = plans_manager.get_label_manager(dataset_json)
@@ -138,11 +138,11 @@ def find_best_configuration(dataset_name_or_id,
                     'result': load_summary_json(join(output_folder_ensemble, 'summary.json'))['foreground_mean']['Dice']
                     }
 
-    # pick best and report inference command
+
     best_score = max([i['result'] for i in all_results.values()])
-    best_keys = [k for k in all_results.keys() if all_results[k]['result'] == best_score]  # may never happen but theoretically
-    # there can be a tie. Let's pick the first model in this case because it's going to be the simpler one (ensembles
-    # come after single configs)
+    best_keys = [k for k in all_results.keys() if all_results[k]['result'] == best_score]
+
+
     best_key = best_keys[0]
 
     print()
@@ -158,8 +158,8 @@ def find_best_configuration(dataset_name_or_id,
                              dataset_json_file_or_dict=join(all_results[best_key]['source'], 'dataset.json'),
                              num_processes=num_processes, keep_postprocessed_files=True)
 
-    # in addition to just reading the console output (how it was previously) we should return the information
-    # needed to run the full inference via API
+
+
     return_dict = {
         'folds': folds,
         'dataset_name_or_id': dataset_name_or_id,
@@ -171,12 +171,12 @@ def find_best_configuration(dataset_name_or_id,
             'result_on_crossval_post_pp': load_json(join(all_results[best_key]['source'], 'postprocessed', 'summary.json'))['foreground_mean']['Dice'],
             'postprocessing_file': join(all_results[best_key]['source'], 'postprocessing.pkl'),
             'some_plans_file': join(all_results[best_key]['source'], 'plans.json'),
-            # just needed for label handling, can
-            # come from any of the ensemble members (if any)
+
+
             'selected_model_or_models': []
         }
     }
-    # convert best key to inference command:
+
     if best_key.startswith('ensemble___'):
         prefix, m1, m2, folds_string = best_key.split('___')
         tr1, pl1, c1 = convert_identifier_to_trainer_plans_config(m1)
@@ -202,11 +202,11 @@ def find_best_configuration(dataset_name_or_id,
                 'plans_identifier': pl,
             })
 
-    save_json(return_dict, join(nnUNet_results, dataset_name, 'inference_information.json'))  # save this so that we don't have to run this
-    # everything someone wants to be reminded of the inference commands. They can just load this and give it to
-    # print_inference_instructions
+    save_json(return_dict, join(nnUNet_results, dataset_name, 'inference_information.json'))
 
-    # print it
+
+
+
     print_inference_instructions(return_dict, instructions_file=join(nnUNet_results, dataset_name, 'inference_instructions.txt'))
     return return_dict
 

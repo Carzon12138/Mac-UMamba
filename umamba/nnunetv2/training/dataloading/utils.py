@@ -18,19 +18,19 @@ def find_broken_image_and_labels(
     If so, the case id is added to the respective set and returned for potential fixing.
 
     :path_to_data_dir: Path/str to the preprocessed directory containing the npys and npzs.
-    :returns: Tuple of a set containing the case ids of the broken npy images and a set of the case ids of broken npy segmentations. 
+    :returns: Tuple of a set containing the case ids of the broken npy images and a set of the case ids of broken npy segmentations.
     """
     content = os.listdir(path_to_data_dir)
     unique_ids = [c[:-4] for c in content if c.endswith(".npz")]
     failed_data_ids = set()
     failed_seg_ids = set()
     for unique_id in unique_ids:
-        # Try reading data
+
         try:
             np.load(path_to_data_dir / (unique_id + ".npy"), "r")
         except ValueError:
             failed_data_ids.add(unique_id)
-        # Try reading seg
+
         try:
             np.load(path_to_data_dir / (unique_id + "_seg.npy"), "r")
         except ValueError:
@@ -40,7 +40,7 @@ def find_broken_image_and_labels(
 
 
 def try_fix_broken_npy(path_do_data_dir: Path, case_ids: set[str], fix_image: bool):
-    """ 
+    """
     Receives broken case ids and tries to fix them by re-extracting the npz file (up to 5 times).
 
     :param case_ids: Set of case ids that are broken.
@@ -54,7 +54,7 @@ def try_fix_broken_npy(path_do_data_dir: Path, case_ids: set[str], fix_image: bo
                 suffix = ".npy" if fix_image else "_seg.npy"
                 read_npz = np.load(path_do_data_dir / (case_id + ".npz"), "r")[key]
                 np.save(path_do_data_dir / (case_id + suffix), read_npz)
-                # Try loading the just saved image.
+
                 np.load(path_do_data_dir / (case_id + suffix), "r")
                 break
             except ValueError:
@@ -74,7 +74,7 @@ def verify_or_stratify_npys(path_to_data_dir: str | Path) -> None:
       Otherwise an obscured error will be raised later during training (depending when the broken file is sampled)
     """
     path_to_data_dir = Path(path_to_data_dir)
-    # Check for broken image and segmentation npys
+
     failed_data_ids, failed_seg_ids = find_broken_image_and_labels(path_to_data_dir)
 
     if len(failed_data_ids) != 0 or len(failed_seg_ids) != 0:
@@ -83,14 +83,14 @@ def verify_or_stratify_npys(path_to_data_dir: str | Path) -> None:
             + f"Faulty images: {failed_data_ids}; Faulty segmentations: {failed_seg_ids})\n"
             + "Trying to fix them now."
         )
-        # Try to fix the broken npys by reextracting the npz. If that fails, raise error
+
         try_fix_broken_npy(path_to_data_dir, failed_data_ids, fix_image=True)
         try_fix_broken_npy(path_to_data_dir, failed_seg_ids, fix_image=False)
 
 
 def _convert_to_npy(npz_file: str, unpack_segmentation: bool = True, overwrite_existing: bool = False) -> None:
     try:
-        a = np.load(npz_file)  # inexpensive, no compression is done here. This just reads metadata
+        a = np.load(npz_file)
         if overwrite_existing or not isfile(npz_file[:-3] + "npy"):
             np.save(npz_file[:-3] + "npy", a['data'])
         if unpack_segmentation and (overwrite_existing or not isfile(npz_file[:-4] + "_seg.npy")):

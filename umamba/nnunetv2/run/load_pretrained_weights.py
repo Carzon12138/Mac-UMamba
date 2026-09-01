@@ -30,7 +30,7 @@ def load_pretrained_weights(network, fname, verbose=False):
         mod = mod._orig_mod
 
     model_dict = mod.state_dict()
-    # verify that all but the segmentation layers have the same shape
+
     for key, _ in model_dict.items():
         if all([i not in key for i in skip_strings_in_pretrained]):
             assert key in pretrained_dict, \
@@ -41,14 +41,14 @@ def load_pretrained_weights(network, fname, verbose=False):
                 f"{pretrained_dict[key].shape}; your network: {model_dict[key]}. The pretrained model " \
                 f"does not seem to be compatible with your network."
 
-    # fun fact: in principle this allows loading from parameters that do not cover the entire network. For example pretrained
-    # encoders. Not supported by this function though (see assertions above)
 
-    # commenting out this abomination of a dict comprehension for preservation in the archives of 'what not to do'
-    # pretrained_dict = {'module.' + k if is_ddp else k: v
-    #                    for k, v in pretrained_dict.items()
-    #                    if (('module.' + k if is_ddp else k) in model_dict) and
-    #                    all([i not in k for i in skip_strings_in_pretrained])}
+
+
+
+
+
+
+
 
     pretrained_dict = {k: v for k, v in pretrained_dict.items()
                        if k in model_dict.keys() and all([i not in k for i in skip_strings_in_pretrained])}
@@ -62,5 +62,3 @@ def load_pretrained_weights(network, fname, verbose=False):
             print(key, 'shape', value.shape)
         print("################### Done ###################")
     mod.load_state_dict(model_dict)
-
-

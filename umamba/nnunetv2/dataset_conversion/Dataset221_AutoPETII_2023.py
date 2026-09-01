@@ -10,7 +10,7 @@ def convert_autopet(autopet_base_dir:str = '/media/isensee/My Book1/AutoPET/nift
 
     foldername = "Dataset%03.0d_%s" % (nnunet_dataset_id, task_name)
 
-    # setting up nnU-Net folders
+
     out_base = join(nnUNet_raw, foldername)
     imagestr = join(out_base, "imagesTr")
     labelstr = join(out_base, "labelsTr")
@@ -41,10 +41,10 @@ def convert_autopet(autopet_base_dir:str = '/media/isensee/My Book1/AutoPET/nift
                           num_training_cases=n, file_ending='.nii.gz',
                           dataset_name=task_name, reference='https://autopet-ii.grand-challenge.org/',
                           release='release',
-                          # overwrite_image_reader_writer='NibabelIOWithReorient',
+
                           description=task_name)
 
-    # manual split
+
     splits = []
     for fold in range(5):
         val_patients = patients[fold :: 5]

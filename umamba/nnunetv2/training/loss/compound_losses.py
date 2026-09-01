@@ -39,8 +39,8 @@ class DC_and_CE_loss(nn.Module):
             assert target.shape[1] == 1, 'ignore label is not implemented for one hot encoded target variables ' \
                                          '(DC_and_CE_loss)'
             mask = target != self.ignore_label
-            # remove ignore label from target, replace with one of the known labels. It doesn't matter because we
-            # ignore gradients in those areas anyway
+
+
             target_dice = torch.where(mask, target, 0)
             num_fg = mask.sum()
         else:
@@ -82,9 +82,9 @@ class DC_and_BCE_loss(nn.Module):
 
     def forward(self, net_output: torch.Tensor, target: torch.Tensor):
         if self.use_ignore_label:
-            # target is one hot encoded here. invert it so that it is True wherever we can compute the loss
+
             mask = (1 - target[:, -1:]).bool()
-            # remove ignore channel now that we have the mask
+
             target_regions = torch.clone(target[:, :-1])
         else:
             target_regions = target
@@ -132,8 +132,8 @@ class DC_and_topk_loss(nn.Module):
             assert target.shape[1] == 1, 'ignore label is not implemented for one hot encoded target variables ' \
                                          '(DC_and_CE_loss)'
             mask = (target != self.ignore_label).bool()
-            # remove ignore label from target, replace with one of the known labels. It doesn't matter because we
-            # ignore gradients in those areas anyway
+
+
             target_dice = torch.clone(target)
             target_dice[target == self.ignore_label] = 0
             num_fg = mask.sum()

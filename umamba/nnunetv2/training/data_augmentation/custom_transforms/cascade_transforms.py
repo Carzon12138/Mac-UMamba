@@ -61,7 +61,7 @@ class RemoveRandomConnectedComponentFromOneHotEncodingTransform(AbstractTransfor
             if np.random.uniform() < self.p_per_sample:
                 for c in self.channel_idx:
                     if np.random.uniform() < self.p_per_label:
-                        # print(np.unique(data[b, c])) ## should be [0, 1]
+
                         workon = data[b, c].astype(bool)
                         if not np.any(workon):
                             continue
@@ -70,9 +70,9 @@ class RemoveRandomConnectedComponentFromOneHotEncodingTransform(AbstractTransfor
                         if len(component_sizes) > 0:
                             valid_component_ids = [i for i, j in component_sizes.items() if j <
                                                    num_voxels*self.dont_do_if_covers_more_than_x_percent]
-                            # print('RemoveRandomConnectedComponentFromOneHotEncodingTransform', c,
-                            # np.unique(data[b, c]), len(component_sizes), valid_component_ids,
-                            # len(valid_component_ids))
+
+
+
                             if len(valid_component_ids) > 0:
                                 random_component = np.random.choice(valid_component_ids)
                                 data[b, c][lab == random_component] = 0
@@ -111,7 +111,7 @@ class ApplyRandomBinaryOperatorTransform(AbstractTransform):
     def __call__(self, **data_dict):
         for b in range(data_dict[self.key].shape[0]):
             if np.random.uniform() < self.p_per_sample:
-                # this needs to be applied in random order to the channels
+
                 np.random.shuffle(self.channel_idx)
                 for c in self.channel_idx:
                     if np.random.uniform() < self.p_per_label:
@@ -120,17 +120,17 @@ class ApplyRandomBinaryOperatorTransform(AbstractTransform):
                         workon = data_dict[self.key][b, c].astype(bool)
                         if not np.any(workon):
                             continue
-                        # print(np.unique(workon))
+
                         res = operation(workon, selem).astype(data_dict[self.key].dtype)
-                        # print('ApplyRandomBinaryOperatorTransform', c, operation, np.sum(workon), np.sum(res))
+
                         data_dict[self.key][b, c] = res
 
-                        # if class was added, we need to remove it in ALL other channels to keep one hot encoding
-                        # properties
+
+
                         other_ch = [i for i in self.channel_idx if i != c]
                         if len(other_ch) > 0:
                             was_added_mask = (res - workon) > 0
                             for oc in other_ch:
                                 data_dict[self.key][b, oc][was_added_mask] = 0
-                            # if class was removed, leave it at background
+
         return data_dict

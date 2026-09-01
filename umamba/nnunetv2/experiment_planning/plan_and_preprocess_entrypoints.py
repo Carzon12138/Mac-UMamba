@@ -177,21 +177,21 @@ def plan_and_preprocess_entry():
                              'Recommended for cluster environments')
     args = parser.parse_args()
 
-    # fingerprint extraction
+
     print("Fingerprint extraction...")
     extract_fingerprints(args.d, args.fpe, args.npfp, args.verify_dataset_integrity, args.clean, args.verbose)
 
-    # experiment planning
+
     print('Experiment planning...')
     plan_experiments(args.d, args.pl, args.gpu_memory_target, args.preprocessor_name, args.overwrite_target_spacing, args.overwrite_plans_name)
 
-    # manage default np
+
     if args.np is None:
         default_np = {"2d": 8, "3d_fullres": 4, "3d_lowres": 8}
         np = [default_np[c] if c in default_np.keys() else 4 for c in args.c]
     else:
         np = args.np
-    # preprocessing
+
     if not args.no_pp:
         print('Preprocessing...')
         preprocess(args.d, args.overwrite_plans_name, args.c, np, args.verbose)

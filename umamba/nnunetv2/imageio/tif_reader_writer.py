@@ -1,17 +1,17 @@
-#    Copyright 2021 HIP Applied Computer Vision Lab, Division of Medical Image Computing, German Cancer Research Center
-#    (DKFZ), Heidelberg, Germany
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import os.path
 from typing import Tuple, Union, List
 import numpy as np
@@ -36,11 +36,11 @@ class Tiff3DIO(BaseReaderWriter):
     ]
 
     def read_images(self, image_fnames: Union[List[str], Tuple[str, ...]]) -> Tuple[np.ndarray, dict]:
-        # figure out file ending used here
+
         ending = '.' + image_fnames[0].split('.')[-1]
         assert ending.lower() in self.supported_file_endings, f'Ending {ending} not supported by {self.__class__.__name__}'
         ending_length = len(ending)
-        truncate_length = ending_length + 5 # 5 comes from len(_0000)
+        truncate_length = ending_length + 5
 
         images = []
         for f in image_fnames:
@@ -49,7 +49,7 @@ class Tiff3DIO(BaseReaderWriter):
                 raise RuntimeError(f"Only 3D images are supported! File: {f}")
             images.append(image[None])
 
-        # see if aux file can be found
+
         expected_aux_file = image_fnames[0][:-truncate_length] + '.json'
         if isfile(expected_aux_file):
             spacing = load_json(expected_aux_file)['spacing']
@@ -69,7 +69,7 @@ class Tiff3DIO(BaseReaderWriter):
         return np.vstack(images).astype(np.float32), {'spacing': spacing}
 
     def write_seg(self, seg: np.ndarray, output_fname: str, properties: dict) -> None:
-        # not ideal but I really have no clue how to set spacing/resolution information properly in tif files haha
+
         tifffile.imwrite(output_fname, data=seg.astype(np.uint8), compression='zlib')
         file = os.path.basename(output_fname)
         out_dir = os.path.dirname(output_fname)
@@ -77,7 +77,7 @@ class Tiff3DIO(BaseReaderWriter):
         save_json({'spacing': properties['spacing']}, join(out_dir, file[:-(len(ending) + 1)] + '.json'))
 
     def read_seg(self, seg_fname: str) -> Tuple[np.ndarray, dict]:
-        # figure out file ending used here
+
         ending = '.' + seg_fname.split('.')[-1]
         assert ending.lower() in self.supported_file_endings, f'Ending {ending} not supported by {self.__class__.__name__}'
         ending_length = len(ending)
@@ -87,7 +87,7 @@ class Tiff3DIO(BaseReaderWriter):
             raise RuntimeError(f"Only 3D images are supported! File: {seg_fname}")
         seg = seg[None]
 
-        # see if aux file can be found
+
         expected_aux_file = seg_fname[:-ending_length] + '.json'
         if isfile(expected_aux_file):
             spacing = load_json(expected_aux_file)['spacing']

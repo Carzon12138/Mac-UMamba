@@ -30,7 +30,7 @@ class nnUNetTrainer_2000epochs_NoMirroring(nnUNetTrainer):
         self.inference_allowed_mirroring_axes = None
         return rotation_for_DA, do_dummy_2d_data_aug, initial_patch_size, mirror_axes
 
-    
+
 class nnUNetTrainer_4000epochs_NoMirroring(nnUNetTrainer):
     def __init__(self, plans: dict, configuration: str, fold: int, dataset_json: dict, unpack_dataset: bool = True,
                  device: torch.device = torch.device('cuda')):
@@ -57,4 +57,3 @@ class nnUNetTrainer_8000epochs_NoMirroring(nnUNetTrainer):
         mirror_axes = None
         self.inference_allowed_mirroring_axes = None
         return rotation_for_DA, do_dummy_2d_data_aug, initial_patch_size, mirror_axes
-

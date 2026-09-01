@@ -73,7 +73,7 @@ class MemoryEfficientSoftDiceLoss(nn.Module):
         if self.apply_nonlin is not None:
             x = self.apply_nonlin(x)
 
-        # make everything shape (b, c)
+
         axes = tuple(range(2, x.ndim))
 
         with torch.no_grad():
@@ -81,7 +81,7 @@ class MemoryEfficientSoftDiceLoss(nn.Module):
                 y = y.view((y.shape[0], 1, *y.shape[1:]))
 
             if x.shape == y.shape:
-                # if this is the case then gt is probably already a one hot encoding
+
                 y_onehot = y
             else:
                 y_onehot = torch.zeros(x.shape, device=x.device, dtype=torch.bool)
@@ -92,7 +92,7 @@ class MemoryEfficientSoftDiceLoss(nn.Module):
 
             sum_gt = y_onehot.sum(axes) if loss_mask is None else (y_onehot * loss_mask).sum(axes)
 
-        # this one MUST be outside the with torch.no_grad(): context. Otherwise no gradients for you
+
         if not self.do_bg:
             x = x[:, 1:]
 
@@ -139,7 +139,7 @@ def get_tp_fp_fn_tn(net_output, gt, axes=None, mask=None, square=False):
             gt = gt.view((gt.shape[0], 1, *gt.shape[1:]))
 
         if net_output.shape == gt.shape:
-            # if this is the case then gt is probably already a one hot encoding
+
             y_onehot = gt
         else:
             y_onehot = torch.zeros(net_output.shape, device=net_output.device)
@@ -157,13 +157,13 @@ def get_tp_fp_fn_tn(net_output, gt, axes=None, mask=None, square=False):
         fp *= mask_here
         fn *= mask_here
         tn *= mask_here
-        # benchmark whether tiling the mask would be faster (torch.tile). It probably is for large batch sizes
-        # OK it barely makes a difference but the implementation above is a tiny bit faster + uses less vram
-        # (using nnUNetv2_train 998 3d_fullres 0)
-        # tp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tp, dim=1)), dim=1)
-        # fp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fp, dim=1)), dim=1)
-        # fn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fn, dim=1)), dim=1)
-        # tn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tn, dim=1)), dim=1)
+
+
+
+
+
+
+
 
     if square:
         tp = tp ** 2

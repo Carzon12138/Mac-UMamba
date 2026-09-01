@@ -26,7 +26,7 @@ class nnUNetLogger(object):
             'epoch_end_timestamps': list()
         }
         self.verbose = verbose
-        # shut up, this logging is great
+
 
     def log(self, key, value, epoch: int):
         """
@@ -45,18 +45,18 @@ class nnUNetLogger(object):
             print(f'maybe some logging issue!? logging {key} and {value}')
             self.my_fantastic_logging[key][epoch] = value
 
-        # handle the ema_fg_dice special case! It is automatically logged when we add a new mean_fg_dice
+
         if key == 'mean_fg_dice':
             new_ema_pseudo_dice = self.my_fantastic_logging['ema_fg_dice'][epoch - 1] * 0.9 + 0.1 * value \
                 if len(self.my_fantastic_logging['ema_fg_dice']) > 0 else value
             self.log('ema_fg_dice', new_ema_pseudo_dice, epoch)
 
     def plot_progress_png(self, output_folder):
-        # we infer the epoch form our internal logging
-        epoch = min([len(i) for i in self.my_fantastic_logging.values()]) - 1  # lists of epoch 0 have len 1
+
+        epoch = min([len(i) for i in self.my_fantastic_logging.values()]) - 1
         sns.set(font_scale=2.5)
         fig, ax_all = plt.subplots(3, 1, figsize=(30, 54))
-        # regular progress.png as we are used to from previous nnU-Net versions
+
         ax = ax_all[0]
         ax2 = ax.twinx()
         x_values = list(range(epoch + 1))
@@ -72,8 +72,8 @@ class nnUNetLogger(object):
         ax.legend(loc=(0, 1))
         ax2.legend(loc=(0.2, 1))
 
-        # epoch times to see whether the training speed is consistent (inconsistent means there are other jobs
-        # clogging up the system)
+
+
         ax = ax_all[1]
         ax.plot(x_values, [i - j for i, j in zip(self.my_fantastic_logging['epoch_end_timestamps'][:epoch + 1],
                                                  self.my_fantastic_logging['epoch_start_timestamps'])][:epoch + 1], color='b',
@@ -84,7 +84,7 @@ class nnUNetLogger(object):
         ax.set_ylabel("time [s]")
         ax.legend(loc=(0, 1))
 
-        # learning rate
+
         ax = ax_all[2]
         ax.plot(x_values, self.my_fantastic_logging['lrs'][:epoch + 1], color='b', ls='-', label="learning rate", linewidth=4)
         ax.set_xlabel("epoch")

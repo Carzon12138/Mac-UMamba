@@ -39,7 +39,7 @@ class ExperimentPlanner(object):
         self.dataset_json = load_json(join(self.raw_dataset_folder, 'dataset.json'))
         self.dataset = get_filenames_of_train_images_and_targets(self.raw_dataset_folder, self.dataset_json)
 
-        # load dataset fingerprint
+
         if not isfile(join(preprocessed_folder, 'dataset_fingerprint.json')):
             raise RuntimeError('Fingerprint missing for this dataset. Please run nnUNet_extract_dataset_fingerprint')
 
@@ -49,10 +49,10 @@ class ExperimentPlanner(object):
 
         self.UNet_base_num_features = 32
         self.UNet_class = PlainConvUNet
-        # the following two numbers are really arbitrary and were set to reproduce nnU-Net v1's configurations as
-        # much as possible
-        self.UNet_reference_val_3d = 560000000  # 455600128  550000000
-        self.UNet_reference_val_2d = 85000000  # 83252480
+
+
+        self.UNet_reference_val_3d = 560000000
+        self.UNet_reference_val_2d = 85000000
         self.UNet_reference_com_nfeatures = 32
         self.UNet_reference_val_corresp_GB = 8
         self.UNet_reference_val_corresp_bs_2d = 12
@@ -65,8 +65,8 @@ class ExperimentPlanner(object):
         self.UNet_max_features_2d = 512
         self.UNet_max_features_3d = 320
 
-        self.lowres_creation_threshold = 0.25  # if the patch size of fullres is less than 25% of the voxels in the
-        # median shape then we need a lowres config as well
+        self.lowres_creation_threshold = 0.25
+
 
         self.preprocessor_name = preprocessor_name
         self.plans_identifier = plans_name
@@ -171,14 +171,14 @@ class ExperimentPlanner(object):
 
         target = np.percentile(np.vstack(spacings), 50, 0)
 
-        # todo sizes_after_resampling = [compute_new_shape(j, i, target) for i, j in zip(spacings, sizes)]
+
 
         target_size = np.percentile(np.vstack(sizes), 50, 0)
-        # we need to identify datasets for which a different target spacing could be beneficial. These datasets have
-        # the following properties:
-        # - one axis which much lower resolution than the others
-        # - the lowres axis has much less voxels than the others
-        # - (the size in mm of the lowres axis is also reduced)
+
+
+
+
+
         worst_spacing_axis = np.argmax(target)
         other_axes = [i for i in range(len(target)) if i != worst_spacing_axis]
         other_spacings = [target[i] for i in other_axes]
@@ -190,7 +190,7 @@ class ExperimentPlanner(object):
         if has_aniso_spacing and has_aniso_voxels:
             spacings_of_that_axis = np.vstack(spacings)[:, worst_spacing_axis]
             target_spacing_of_that_axis = np.percentile(spacings_of_that_axis, 10)
-            # don't let the spacing of that axis get higher than the other axes
+
             if target_spacing_of_that_axis < max(other_spacings):
                 target_spacing_of_that_axis = max(max(other_spacings), target_spacing_of_that_axis) + 1e-5
             target[worst_spacing_axis] = target_spacing_of_that_axis
@@ -217,7 +217,7 @@ class ExperimentPlanner(object):
         if self.suppress_transpose:
             return [0, 1, 2], [0, 1, 2]
 
-        # todo we should use shapes for that as well. Not quite sure how yet
+
         target_spacing = self.determine_fullres_target_spacing()
 
         max_spacing_axis = np.argmax(target_spacing)
@@ -232,16 +232,16 @@ class ExperimentPlanner(object):
                                     data_identifier: str,
                                     approximate_n_voxels_dataset: float) -> dict:
         assert all([i > 0 for i in spacing]), f"Spacing must be > 0! Spacing: {spacing}"
-        # print(spacing, median_shape, approximate_n_voxels_dataset)
-        # find an initial patch size
-        # we first use the spacing to get an aspect ratio
+
+
+
         tmp = 1 / np.array(spacing)
 
-        # we then upscale it so that it initially is certainly larger than what we need (rescale to have the same
-        # volume as a patch of size 256 ** 3)
-        # this may need to be adapted when using absurdly large GPU memory targets. Increasing this now would not be
-        # ideal because large initial patch sizes increase computation time because more iterations in the while loop
-        # further down may be required.
+
+
+
+
+
         if len(spacing) == 3:
             initial_patch_size = [round(i) for i in tmp * (256 ** 3 / np.prod(tmp)) ** (1 / 3)]
         elif len(spacing) == 2:
@@ -249,19 +249,19 @@ class ExperimentPlanner(object):
         else:
             raise RuntimeError()
 
-        # clip initial patch size to median_shape. It makes little sense to have it be larger than that. Note that
-        # this is different from how nnU-Net v1 does it!
-        # todo patch size can still get too large because we pad the patch size to a multiple of 2**n
+
+
+
         initial_patch_size = np.array([min(i, j) for i, j in zip(initial_patch_size, median_shape[:len(spacing)])])
 
-        # use that to get the network topology. Note that this changes the patch_size depending on the number of
-        # pooling operations (must be divisible by 2**num_pool in each axis)
+
+
         network_num_pool_per_axis, pool_op_kernel_sizes, conv_kernel_sizes, patch_size, \
         shape_must_be_divisible_by = get_pool_and_conv_props(spacing, initial_patch_size,
                                                              self.UNet_featuremap_min_edge_length,
                                                              999999)
 
-        # now estimate vram consumption
+
         num_stages = len(pool_op_kernel_sizes)
         estimate = self.static_estimate_VRAM_usage(tuple(patch_size),
                                                    num_stages,
@@ -278,23 +278,23 @@ class ExperimentPlanner(object):
                                                    self.UNet_blocks_per_stage_decoder[:num_stages - 1],
                                                    len(self.dataset_json['labels'].keys()))
 
-        # how large is the reference for us here (batch size etc)?
-        # adapt for our vram target
+
+
         reference = (self.UNet_reference_val_2d if len(spacing) == 2 else self.UNet_reference_val_3d) * \
                     (self.UNet_vram_target_GB / self.UNet_reference_val_corresp_GB)
 
         while estimate > reference:
-            # print(patch_size)
-            # patch size seems to be too large, so we need to reduce it. Reduce the axis that currently violates the
-            # aspect ratio the most (that is the largest relative to median shape)
+
+
+
             axis_to_be_reduced = np.argsort(patch_size / median_shape[:len(spacing)])[-1]
 
-            # we cannot simply reduce that axis by shape_must_be_divisible_by[axis_to_be_reduced] because this
-            # may cause us to skip some valid sizes, for example shape_must_be_divisible_by is 64 for a shape of 256.
-            # If we subtracted that we would end up with 192, skipping 224 which is also a valid patch size
-            # (224 / 2**5 = 7; 7 < 2 * self.UNet_featuremap_min_edge_length(4) so it's valid). So we need to first
-            # subtract shape_must_be_divisible_by, then recompute it and then subtract the
-            # recomputed shape_must_be_divisible_by. Annoying.
+
+
+
+
+
+
             tmp = deepcopy(patch_size)
             tmp[axis_to_be_reduced] -= shape_must_be_divisible_by[axis_to_be_reduced]
             _, _, _, _, shape_must_be_divisible_by = \
@@ -303,7 +303,7 @@ class ExperimentPlanner(object):
                                         999999)
             patch_size[axis_to_be_reduced] -= shape_must_be_divisible_by[axis_to_be_reduced]
 
-            # now recompute topology
+
             network_num_pool_per_axis, pool_op_kernel_sizes, conv_kernel_sizes, patch_size, \
             shape_must_be_divisible_by = get_pool_and_conv_props(spacing, patch_size,
                                                                  self.UNet_featuremap_min_edge_length,
@@ -325,13 +325,13 @@ class ExperimentPlanner(object):
                                                        self.UNet_blocks_per_stage_decoder[:num_stages - 1],
                                                        len(self.dataset_json['labels'].keys()))
 
-        # alright now let's determine the batch size. This will give self.UNet_min_batch_size if the while loop was
-        # executed. If not, additional vram headroom is used to increase batch size
+
+
         ref_bs = self.UNet_reference_val_corresp_bs_2d if len(spacing) == 2 else self.UNet_reference_val_corresp_bs_3d
         batch_size = round((reference / estimate) * ref_bs)
 
-        # we need to cap the batch size to cover at most 5% of the entire dataset. Overfitting precaution. We cannot
-        # go smaller than self.UNet_min_batch_size though
+
+
         bs_corresponding_to_5_percent = round(
             approximate_n_voxels_dataset * 0.05 / np.prod(patch_size, dtype=np.float64))
         batch_size = max(min(batch_size, bs_corresponding_to_5_percent), self.UNet_min_batch_size)
@@ -380,14 +380,14 @@ class ExperimentPlanner(object):
         hard.
         """
 
-        # first get transpose
+
         transpose_forward, transpose_backward = self.determine_transpose()
 
-        # get fullres spacing and transpose it
+
         fullres_spacing = self.determine_fullres_target_spacing()
         fullres_spacing_transposed = fullres_spacing[transpose_forward]
 
-        # get transposed new median shape (what we would have after resampling)
+
         new_shapes = [compute_new_shape(j, i, fullres_spacing) for i, j in
                       zip(self.dataset_fingerprint['spacings'], self.dataset_fingerprint['shapes_after_crop'])]
         new_median_shape = np.median(new_shapes, 0)
@@ -395,13 +395,13 @@ class ExperimentPlanner(object):
 
         approximate_n_voxels_dataset = float(np.prod(new_median_shape_transposed, dtype=np.float64) *
                                              self.dataset_json['numTraining'])
-        # only run 3d if this is a 3d dataset
+
         if new_median_shape_transposed[0] != 1:
             plan_3d_fullres = self.get_plans_for_configuration(fullres_spacing_transposed,
                                                                new_median_shape_transposed,
                                                                self.generate_data_identifier('3d_fullres'),
                                                                approximate_n_voxels_dataset)
-            # maybe add 3d_lowres as well
+
             patch_size_fullres = plan_3d_fullres['patch_size']
             median_num_voxels = np.prod(new_median_shape_transposed, dtype=np.float64)
             num_voxels_in_patch = np.prod(patch_size_fullres, dtype=np.float64)
@@ -409,11 +409,11 @@ class ExperimentPlanner(object):
             plan_3d_lowres = None
             lowres_spacing = deepcopy(plan_3d_fullres['spacing'])
 
-            spacing_increase_factor = 1.03  # used to be 1.01 but that is slow with new GPU memory estimation!
+            spacing_increase_factor = 1.03
 
             while num_voxels_in_patch / median_num_voxels < self.lowres_creation_threshold:
-                # we incrementally increase the target spacing. We start with the anisotropic axis/axes until it/they
-                # is/are similar (factor 2) to the other ax(i/e)s.
+
+
                 max_spacing = max(lowres_spacing)
                 if np.any((max_spacing / lowres_spacing) > 2):
                     lowres_spacing[(max_spacing / lowres_spacing) > 2] *= spacing_increase_factor
@@ -421,7 +421,7 @@ class ExperimentPlanner(object):
                     lowres_spacing *= spacing_increase_factor
                 median_num_voxels = np.prod(plan_3d_fullres['spacing'] / lowres_spacing * new_median_shape_transposed,
                                             dtype=np.float64)
-                # print(lowres_spacing)
+
                 plan_3d_lowres = self.get_plans_for_configuration(lowres_spacing,
                                                                   [round(i) for i in plan_3d_fullres['spacing'] /
                                                                    lowres_spacing * new_median_shape_transposed],
@@ -442,7 +442,7 @@ class ExperimentPlanner(object):
             plan_3d_fullres = None
             plan_3d_lowres = None
 
-        # 2D configuration
+
         plan_2d = self.get_plans_for_configuration(fullres_spacing_transposed[1:],
                                                    new_median_shape_transposed[1:],
                                                    self.generate_data_identifier('2d'), approximate_n_voxels_dataset)
@@ -452,16 +452,16 @@ class ExperimentPlanner(object):
         print(plan_2d)
         print()
 
-        # median spacing and shape, just for reference when printing the plans
+
         median_spacing = np.median(self.dataset_fingerprint['spacings'], 0)[transpose_forward]
         median_shape = np.median(self.dataset_fingerprint['shapes_after_crop'], 0)[transpose_forward]
 
-        # instead of writing all that into the plans we just copy the original file. More files, but less crowded
-        # per file.
+
+
         shutil.copy(join(self.raw_dataset_folder, 'dataset.json'),
                     join(nnUNet_preprocessed, self.dataset_name, 'dataset.json'))
 
-        # json is stupid and I hate it... "Object of type int64 is not JSON serializable" -> my ass
+
         plans = {
             'dataset_name': self.dataset_name,
             'plans_name': self.plans_identifier,
@@ -504,8 +504,8 @@ class ExperimentPlanner(object):
 
         plans_file = join(nnUNet_preprocessed, self.dataset_name, self.plans_identifier + '.json')
 
-        # we don't want to overwrite potentially existing custom configurations every time this is executed. So let's
-        # read the plans file if it already exists and keep any non-default configurations
+
+
         if isfile(plans_file):
             old_plans = load_json(plans_file)
             old_configurations = old_plans['configurations']

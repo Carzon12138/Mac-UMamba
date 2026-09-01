@@ -10,8 +10,8 @@ from nnunetv2.paths import nnUNet_raw
 
 
 def copy_BraTS_segmentation_and_convert_labels_to_nnUNet(in_file: str, out_file: str) -> None:
-    # use this for segmentation only!!!
-    # nnUNet wants the labels to be continuous. BraTS is 0, 1, 2, 4 -> we make that into 0, 1, 2, 3
+
+
     img = sitk.ReadImage(in_file)
     img_npy = sitk.GetArrayFromImage(img)
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     foldername = "Dataset%03.0d_%s" % (task_id, task_name)
 
-    # setting up nnU-Net folders
+
     out_base = join(nnUNet_raw, foldername)
     imagestr = join(out_base, "imagesTr")
     labelstr = join(out_base, "labelsTr")

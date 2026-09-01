@@ -13,7 +13,7 @@ from nnunetv2.utilities.helpers import softmax_helper_dim0
 
 from typing import TYPE_CHECKING
 
-# see https://adamj.eu/tech/2021/05/13/python-type-hints-how-to-fix-circular-imports/
+
 if TYPE_CHECKING:
     from nnunetv2.utilities.plans_handling.plans_handler import PlansManager, ConfigurationManager
 
@@ -55,14 +55,14 @@ class LabelManager(object):
         if isinstance(bg_label, (tuple, list)):
             raise RuntimeError(f"Background label must be 0. Not a list. Not a tuple. Your background label: {bg_label}")
         assert int(bg_label) == 0, f"Background label must be 0. Your background label: {bg_label}"
-        # not sure if we want to allow regions that contain background. I don't immediately see how this could cause
-        # problems so we allow it for now. That doesn't mean that this is explicitly supported. It could be that this
-        # just crashes.
+
+
+
 
     def _get_all_labels(self) -> List[int]:
         all_labels = []
         for k, r in self.label_dict.items():
-            # ignore label is not going to be used, hence the name. Duh.
+
             if k == 'ignore':
                 continue
             if isinstance(r, (tuple, list)):
@@ -82,10 +82,10 @@ class LabelManager(object):
                                                          'define regions_class_order!'
             regions = []
             for k, r in self.label_dict.items():
-                # ignore ignore label
+
                 if k == 'ignore':
                     continue
-                # ignore regions that are background
+
                 if (np.isscalar(r) and r == 0) \
                         or \
                         (isinstance(r, (tuple, list)) and len(np.unique(r)) == 1 and np.unique(r)[0] == 0):
@@ -134,7 +134,7 @@ class LabelManager(object):
             logits = torch.from_numpy(logits)
 
         with torch.no_grad():
-            # softmax etc is not implemented for half
+
             logits = logits.float()
             probabilities = self.inference_nonlin(logits)
 
@@ -154,7 +154,7 @@ class LabelManager(object):
         if self.has_regions:
             assert self.regions_class_order is not None, 'if region-based training is requested then you need to ' \
                                                          'define regions_class_order!'
-            # check correct number of outputs
+
         assert predicted_probabilities.shape[0] == self.num_segmentation_heads, \
             f'unexpected number of channels in predicted_probabilities. Expected {self.num_segmentation_heads}, ' \
             f'got {predicted_probabilities.shape[0]}. Remember that predicted_probabilities should have shape ' \
@@ -164,7 +164,7 @@ class LabelManager(object):
             if isinstance(predicted_probabilities, np.ndarray):
                 segmentation = np.zeros(predicted_probabilities.shape[1:], dtype=np.uint16)
             else:
-                # no uint16 in torch
+
                 segmentation = torch.zeros(predicted_probabilities.shape[1:], dtype=torch.int16,
                                            device=predicted_probabilities.device)
             for i, c in enumerate(self.regions_class_order):
@@ -195,7 +195,7 @@ class LabelManager(object):
         and not have strange artifacts.
         Only LabelManager knows how this needs to be done. So let's let him/her do it, ok?
         """
-        # revert cropping
+
         probs_reverted_cropping = np.zeros((predicted_probabilities.shape[0], *original_shape),
                                            dtype=predicted_probabilities.dtype) \
             if isinstance(predicted_probabilities, np.ndarray) else \
@@ -210,8 +210,8 @@ class LabelManager(object):
 
     @staticmethod
     def filter_background(classes_or_regions: Union[List[int], List[Union[int, Tuple[int, ...]]]]):
-        # heck yeah
-        # This is definitely taking list comprehension too far. Enjoy.
+
+
         return [i for i in classes_or_regions if
                 ((not isinstance(i, (tuple, list))) and i != 0)
                 or
@@ -264,19 +264,19 @@ def convert_labelmap_to_one_hot(segmentation: Union[np.ndarray, torch.Tensor],
         result = torch.zeros((len(all_labels), *segmentation.shape),
                              dtype=output_dtype if output_dtype is not None else torch.uint8,
                              device=segmentation.device)
-        # variant 1, 2x faster than 2
-        result.scatter_(0, segmentation[None].long(), 1)  # why does this have to be long!?
-        # variant 2, slower than 1
-        # for i, l in enumerate(all_labels):
-        #     result[i] = segmentation == l
+
+        result.scatter_(0, segmentation[None].long(), 1)
+
+
+
     else:
         result = np.zeros((len(all_labels), *segmentation.shape),
                           dtype=output_dtype if output_dtype is not None else np.uint8)
-        # variant 1, fastest in my testing
+
         for i, l in enumerate(all_labels):
             result[i] = segmentation == l
-        # variant 2. Takes about twice as long so nah
-        # result = np.eye(len(all_labels))[segmentation].transpose((3, 0, 1, 2))
+
+
     return result
 
 
@@ -291,7 +291,7 @@ def determine_num_input_channels(plans_manager: PlansManager,
     label_manager = plans_manager.get_label_manager(dataset_json)
     num_modalities = len(dataset_json['modality']) if 'modality' in dataset_json.keys() else len(dataset_json['channel_names'])
 
-    # cascade has different number of input channels
+
     if config_manager.previous_stage_name is not None:
         num_label_inputs = len(label_manager.foreground_labels)
         num_input_channels = num_modalities + num_label_inputs
@@ -301,7 +301,7 @@ def determine_num_input_channels(plans_manager: PlansManager,
 
 
 if __name__ == '__main__':
-    # this code used to be able to differentiate variant 1 and 2 to measure time.
+
     num_labels = 7
     seg = np.random.randint(0, num_labels, size=(256, 256, 256), dtype=np.uint8)
     seg_torch = torch.from_numpy(seg)

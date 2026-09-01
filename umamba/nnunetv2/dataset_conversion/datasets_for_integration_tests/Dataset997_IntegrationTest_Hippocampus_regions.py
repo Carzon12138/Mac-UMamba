@@ -26,7 +26,7 @@ if __name__ == '__main__':
     source_dataset = maybe_convert_to_dataset_name(4)
     shutil.copytree(join(nnUNet_raw, source_dataset), join(nnUNet_raw, dataset_name))
 
-    # additionally optimize entire hippocampus region, remove Posterior
+
     dj = load_json(join(nnUNet_raw, dataset_name, 'dataset.json'))
     dj['labels'] = {
         'background': 0,

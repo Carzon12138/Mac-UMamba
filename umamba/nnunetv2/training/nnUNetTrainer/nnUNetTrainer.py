@@ -67,48 +67,48 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 class nnUNetTrainer(object):
     def __init__(self, plans: dict, configuration: str, fold: int, dataset_json: dict, unpack_dataset: bool = True,
                  device: torch.device = torch.device('cuda')):
-        # From https://grugbrain.dev/. Worth a read ya big brains ;-)
 
-        # apex predator of grug is complexity
-        # complexity bad
-        # say again:
-        # complexity very bad
-        # you say now:
-        # complexity very, very bad
-        # given choice between complexity or one on one against t-rex, grug take t-rex: at least grug see t-rex
-        # complexity is spirit demon that enter codebase through well-meaning but ultimately very clubbable non grug-brain developers and project managers who not fear complexity spirit demon or even know about sometime
-        # one day code base understandable and grug can get work done, everything good!
-        # next day impossible: complexity demon spirit has entered code and very dangerous situation!
 
-        # OK OK I am guilty. But I tried.
-        # https://www.osnews.com/images/comics/wtfm.jpg
-        # https://i.pinimg.com/originals/26/b2/50/26b250a738ea4abc7a5af4d42ad93af0.jpg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         self.is_ddp = dist.is_available() and dist.is_initialized()
         self.local_rank = 0 if not self.is_ddp else dist.get_rank()
 
         self.device = device
 
-        # print what device we are using
-        if self.is_ddp:  # implicitly it's clear that we use cuda in this case
+
+        if self.is_ddp:
             print(f"I am local rank {self.local_rank}. {device_count()} GPUs are available. The world size is "
                   f"{dist.get_world_size()}."
                   f"Setting device to {self.device}")
             self.device = torch.device(type='cuda', index=self.local_rank)
         else:
             if self.device.type == 'cuda':
-                # we might want to let the user pick this but for now please pick the correct GPU with CUDA_VISIBLE_DEVICES=X
+
                 self.device = torch.device(type='cuda', index=0)
             print(f"Using device: {self.device}")
 
-        # loading and saving this class for continuing from checkpoint should not happen based on pickling. This
-        # would also pickle the network etc. Bad, bad. Instead we just reinstantiate and then load the checkpoint we
-        # need. So let's save the init args
+
+
+
         self.my_init_kwargs = {}
         for k in inspect.signature(self.__init__).parameters.keys():
             self.my_init_kwargs[k] = locals()[k]
 
-        ###  Saving all the init args into class variables for later access
+
         self.plans_manager = PlansManager(plans)
         self.configuration_manager = self.plans_manager.get_configuration(configuration)
         self.configuration_name = configuration
@@ -116,8 +116,8 @@ class nnUNetTrainer(object):
         self.fold = fold
         self.unpack_dataset = unpack_dataset
 
-        ### Setting all the folder names. We need to make sure things don't crash in case we are just running
-        # inference and some of the folders may not be defined!
+
+
         self.preprocessed_dataset_folder_base = join(nnUNet_preprocessed, self.plans_manager.dataset_name) \
             if nnUNet_preprocessed is not None else None
         self.output_folder_base = join(nnUNet_results, self.plans_manager.dataset_name,
@@ -127,10 +127,10 @@ class nnUNetTrainer(object):
 
         self.preprocessed_dataset_folder = join(self.preprocessed_dataset_folder_base,
                                                 self.configuration_manager.data_identifier)
-        # unlike the previous nnunet folder_with_segs_from_previous_stage is now part of the plans. For now it has to
-        # be a different configuration in the same plans
-        # IMPORTANT! the mapping must be bijective, so lowres must point to fullres and vice versa (using
-        # "previous_stage" and "next_stage"). Otherwise it won't work!
+
+
+
+
         self.is_cascaded = self.configuration_manager.previous_stage_name is not None
         self.folder_with_segs_from_previous_stage = \
             join(nnUNet_results, self.plans_manager.dataset_name,
@@ -138,7 +138,7 @@ class nnUNetTrainer(object):
                  self.configuration_manager.previous_stage_name, 'predicted_next_stage', self.configuration_name) \
                 if self.is_cascaded else None
 
-        ### Some hyperparameters for you to fiddle with
+
         self.initial_lr = 1e-2
         self.weight_decay = 3e-5
         self.oversample_foreground_percent = 0.33
@@ -148,20 +148,20 @@ class nnUNetTrainer(object):
         self.current_epoch = 0
         self.enable_deep_supervision = True
 
-        ### Dealing with labels/regions
+
         self.label_manager = self.plans_manager.get_label_manager(dataset_json)
-        # labels can either be a list of int (regular training) or a list of tuples of int (region-based training)
-        # needed for predictions. We do sigmoid in case of (overlapping) regions
 
-        self.num_input_channels = None  # -> self.initialize()
-        self.network = None  # -> self._get_network()
-        self.optimizer = self.lr_scheduler = None  # -> self.initialize
+
+
+        self.num_input_channels = None
+        self.network = None
+        self.optimizer = self.lr_scheduler = None
         self.grad_scaler = GradScaler() if self.device.type == 'cuda' else None
-        self.loss = None  # -> self.initialize
+        self.loss = None
 
-        ### Simple logging. Don't take that away from me!
-        # initialize log file. This is just our log for the print statements etc. Not to be confused with lightning
-        # logging
+
+
+
         timestamp = datetime.now()
         maybe_mkdir_p(self.output_folder)
         self.log_file = join(self.output_folder, "training_log_%d_%d_%d_%02.0d_%02.0d_%02.0d.txt" %
@@ -169,22 +169,22 @@ class nnUNetTrainer(object):
                               timestamp.second))
         self.logger = nnUNetLogger()
 
-        ### placeholders
-        self.dataloader_train = self.dataloader_val = None  # see on_train_start
 
-        ### initializing stuff for remembering things and such
+        self.dataloader_train = self.dataloader_val = None
+
+
         self._best_ema = None
 
-        ### inference things
-        self.inference_allowed_mirroring_axes = None  # this variable is set in
-        # self.configure_rotation_dummyDA_mirroring_and_inital_patch_size and will be saved in checkpoints
 
-        ### checkpoint saving stuff
+        self.inference_allowed_mirroring_axes = None
+
+
+
         self.save_every = 50
         self.disable_checkpointing = False
 
-        ## DDP batch size and oversampling can differ between workers and needs adaptation
-        # we need to change the batch size in DDP because we don't use any of those distributed samplers
+
+
         self._set_batch_size_and_oversample()
 
         self.was_initialized = False
@@ -209,13 +209,13 @@ class nnUNetTrainer(object):
                 self.num_input_channels,
                 self.enable_deep_supervision,
             ).to(self.device)
-            # compile network for free speedup
+
             if self._do_i_compile():
                 self.print_to_log_file('Using torch.compile...')
                 self.network = torch.compile(self.network)
 
             self.optimizer, self.lr_scheduler = self.configure_optimizers()
-            # if ddp, wrap in DDP wrapper
+
             if self.is_ddp:
                 self.network = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.network)
                 self.network = DDP(self.network, device_ids=[self.local_rank])
@@ -230,7 +230,7 @@ class nnUNetTrainer(object):
         return ('nnUNet_compile' in os.environ.keys()) and (os.environ['nnUNet_compile'].lower() in ('true', '1', 't'))
 
     def _save_debug_information(self):
-        # saving some debug information
+
         if self.local_rank == 0:
             dct = {}
             for k in self.__dir__():
@@ -240,7 +240,7 @@ class nnUNetTrainer(object):
                     elif k in ['network', ]:
                         dct[k] = str(getattr(self, k).__class__.__name__)
                     else:
-                        # print(k)
+
                         pass
                 if k in ['dataloader_train', 'dataloader_val']:
                     if hasattr(getattr(self, k), 'generator'):
@@ -297,15 +297,15 @@ class nnUNetTrainer(object):
             deep_supervision_scales = list(list(i) for i in 1 / np.cumprod(np.vstack(
                 self.configuration_manager.pool_op_kernel_sizes), axis=0))[:-1]
         else:
-            deep_supervision_scales = None  # for train and val_transforms
+            deep_supervision_scales = None
         return deep_supervision_scales
 
     def _set_batch_size_and_oversample(self):
         if not self.is_ddp:
-            # set batch size to what the plan says, leave oversample untouched
+
             self.batch_size = self.configuration_manager.batch_size
         else:
-            # batch size is distributed over DDP workers and we need to change oversample_percent for each worker
+
             batch_sizes = []
             oversample_percents = []
 
@@ -341,8 +341,8 @@ class nnUNetTrainer(object):
 
             print("worker", my_rank, "oversample", oversample_percents[my_rank])
             print("worker", my_rank, "batch_size", batch_sizes[my_rank])
-            # self.print_to_log_file("worker", my_rank, "oversample", oversample_percents[my_rank])
-            # self.print_to_log_file("worker", my_rank, "batch_size", batch_sizes[my_rank])
+
+
 
             self.batch_size = batch_sizes[my_rank]
             self.oversample_foreground_percent = oversample_percents[my_rank]
@@ -359,17 +359,17 @@ class nnUNetTrainer(object):
                                    'smooth': 1e-5, 'do_bg': False, 'ddp': self.is_ddp}, {}, weight_ce=1, weight_dice=1,
                                   ignore_label=self.label_manager.ignore_label, dice_class=MemoryEfficientSoftDiceLoss)
 
-        # we give each output a weight which decreases exponentially (division by 2) as the resolution decreases
-        # this gives higher resolution outputs more weight in the loss
+
+
 
         if self.enable_deep_supervision:
             deep_supervision_scales = self._get_deep_supervision_scales()
             weights = np.array([1 / (2**i) for i in range(len(deep_supervision_scales))])
             weights[-1] = 0
 
-            # we don't use the lowest 2 outputs. Normalize weights so that they sum to 1
+
             weights = weights / weights.sum()
-            # now wrap the loss
+
             loss = DeepSupervisionWrapper(loss, weights)
         return loss
 
@@ -379,10 +379,10 @@ class nnUNetTrainer(object):
         """
         patch_size = self.configuration_manager.patch_size
         dim = len(patch_size)
-        # todo rotation should be defined dynamically based on patch size (more isotropic patch sizes = more rotation)
+
         if dim == 2:
             do_dummy_2d_data_aug = False
-            # todo revisit this parametrization
+
             if max(patch_size) / min(patch_size) > 1.5:
                 rotation_for_DA = {
                     'x': (-15. / 360 * 2. * np.pi, 15. / 360 * 2. * np.pi),
@@ -397,11 +397,11 @@ class nnUNetTrainer(object):
                 }
             mirror_axes = (0, 1)
         elif dim == 3:
-            # todo this is not ideal. We could also have patch_size (64, 16, 128) in which case a full 180deg 2d rot would be bad
-            # order of the axes is determined by spacing, not image size
+
+
             do_dummy_2d_data_aug = (max(patch_size) / patch_size[0]) > ANISO_THRESHOLD
             if do_dummy_2d_data_aug:
-                # why do we rotate 180 deg here all the time? We should also restrict it
+
                 rotation_for_DA = {
                     'x': (-180. / 360 * 2. * np.pi, 180. / 360 * 2. * np.pi),
                     'y': (0, 0),
@@ -417,8 +417,8 @@ class nnUNetTrainer(object):
         else:
             raise RuntimeError()
 
-        # todo this function is stupid. It doesn't even use the correct scale range (we keep things as they were in the
-        #  old nnunet for now)
+
+
         initial_patch_size = get_patch_size(patch_size[-dim:],
                                             *rotation_for_DA.values(),
                                             (0.85, 1.25))
@@ -480,18 +480,18 @@ class nnUNetTrainer(object):
 
         if self.local_rank == 0:
             try:
-                # raise NotImplementedError('hiddenlayer no longer works and we do not have a viable alternative :-(')
-                # pip install git+https://github.com/saugatkandel/hiddenlayer.git
 
-                # from torchviz import make_dot
-                # # not viable.
-                # make_dot(tuple(self.network(torch.rand((1, self.num_input_channels,
-                #                                         *self.configuration_manager.patch_size),
-                #                                        device=self.device)))).render(
-                #     join(self.output_folder, "network_architecture.pdf"), format='pdf')
-                # self.optimizer.zero_grad()
 
-                # broken.
+
+
+
+
+
+
+
+
+
+
 
                 import hiddenlayer as hl
                 g = hl.build_graph(self.network,
@@ -505,9 +505,9 @@ class nnUNetTrainer(object):
                 self.print_to_log_file("Unable to plot network architecture:")
                 self.print_to_log_file(e)
 
-                # self.print_to_log_file("\nprinting the network instead:\n")
-                # self.print_to_log_file(self.network)
-                # self.print_to_log_file("\n")
+
+
+
             finally:
                 empty_cache(self.device)
 
@@ -523,7 +523,7 @@ class nnUNetTrainer(object):
         :return:
         """
         if self.fold == "all":
-            # if fold==all then we use all images for training and validation
+
             case_identifiers = get_case_identifiers(self.preprocessed_dataset_folder)
             tr_keys = case_identifiers
             val_keys = tr_keys
@@ -532,7 +532,7 @@ class nnUNetTrainer(object):
             dataset = nnUNetDataset(self.preprocessed_dataset_folder, case_identifiers=None,
                                     num_images_properties_loading_threshold=0,
                                     folder_with_segs_from_previous_stage=self.folder_with_segs_from_previous_stage)
-            # if the split file does not exist we need to create it
+
             if not isfile(splits_file):
                 self.print_to_log_file("Creating new 5-fold cross-validation split...")
                 splits = []
@@ -561,7 +561,7 @@ class nnUNetTrainer(object):
                 self.print_to_log_file("INFO: You requested fold %d for training but splits "
                                        "contain only %d folds. I am now creating a "
                                        "random (but seeded) 80:20 split!" % (self.fold, len(splits)))
-                # if we request a fold that is not in the split file, create a random 80:20 split
+
                 rnd = np.random.RandomState(seed=12345 + self.fold)
                 keys = np.sort(list(dataset.keys()))
                 idx_tr = rnd.choice(len(keys), int(len(keys) * 0.8), replace=False)
@@ -576,11 +576,11 @@ class nnUNetTrainer(object):
         return tr_keys, val_keys
 
     def get_tr_and_val_datasets(self):
-        # create dataset split
+
         tr_keys, val_keys = self.do_split()
 
-        # load the datasets for training and validation. Note that we always draw random samples so we really don't
-        # care about distributing training cases across GPUs.
+
+
         dataset_tr = nnUNetDataset(self.preprocessed_dataset_folder, tr_keys,
                                    folder_with_segs_from_previous_stage=self.folder_with_segs_from_previous_stage,
                                    num_images_properties_loading_threshold=0)
@@ -590,13 +590,13 @@ class nnUNetTrainer(object):
         return dataset_tr, dataset_val
 
     def get_dataloaders(self):
-        # we use the patch size to determine whether we need 2D or 3D dataloaders. We also use it to determine whether
-        # we need to use dummy 2D augmentation (in case of 3D training) and what our initial patch size should be
+
+
         patch_size = self.configuration_manager.patch_size
         dim = len(patch_size)
 
-        # needed for deep supervision: how much do we need to downscale the segmentation targets for the different
-        # outputs?
+
+
 
         deep_supervision_scales = self._get_deep_supervision_scales()
 
@@ -607,7 +607,7 @@ class nnUNetTrainer(object):
             mirror_axes,
         ) = self.configure_rotation_dummyDA_mirroring_and_inital_patch_size()
 
-        # training pipeline
+
         tr_transforms = self.get_training_transforms(
             patch_size, rotation_for_DA, deep_supervision_scales, mirror_axes, do_dummy_2d_data_aug,
             order_resampling_data=3, order_resampling_seg=1,
@@ -616,7 +616,7 @@ class nnUNetTrainer(object):
             regions=self.label_manager.foreground_regions if self.label_manager.has_regions else None,
             ignore_label=self.label_manager.ignore_label)
 
-        # validation pipeline
+
         val_transforms = self.get_validation_transforms(deep_supervision_scales,
                                                         is_cascaded=self.is_cascaded,
                                                         foreground_labels=self.label_manager.foreground_labels,
@@ -700,13 +700,13 @@ class nnUNetTrainer(object):
             patch_size_spatial, patch_center_dist_from_border=None,
             do_elastic_deform=False, alpha=(0, 0), sigma=(0, 0),
             do_rotation=True, angle_x=rotation_for_DA['x'], angle_y=rotation_for_DA['y'], angle_z=rotation_for_DA['z'],
-            p_rot_per_axis=1,  # todo experiment with this
+            p_rot_per_axis=1,
             do_scale=True, scale=(0.7, 1.4),
             border_mode_data="constant", border_cval_data=0, order_data=order_resampling_data,
             border_mode_seg="constant", border_cval_seg=border_val_seg, order_seg=order_resampling_seg,
-            random_crop=False,  # random cropping is part of our dataloaders
+            random_crop=False,
             p_el_per_sample=0, p_scale_per_sample=0.2, p_rot_per_sample=0.2,
-            independent_scale_for_each_axis=False  # todo experiment with this
+            independent_scale_for_each_axis=False
         ))
 
         if do_dummy_2d_data_aug:
@@ -753,7 +753,7 @@ class nnUNetTrainer(object):
         tr_transforms.append(RenameTransform('seg', 'target', True))
 
         if regions is not None:
-            # the ignore label must also be converted
+
             tr_transforms.append(ConvertSegmentationToRegionsTransform(list(regions) + [ignore_label]
                                                                        if ignore_label is not None else regions,
                                                                        'target', 'target'))
@@ -782,7 +782,7 @@ class nnUNetTrainer(object):
         val_transforms.append(RenameTransform('seg', 'target', True))
 
         if regions is not None:
-            # the ignore label must also be converted
+
             val_transforms.append(ConvertSegmentationToRegionsTransform(list(regions) + [ignore_label]
                                                                         if ignore_label is not None else regions,
                                                                         'target', 'target'))
@@ -811,13 +811,13 @@ class nnUNetTrainer(object):
 
         maybe_mkdir_p(self.output_folder)
 
-        # make sure deep supervision is on in the network
+
         self.set_deep_supervision_enabled(self.enable_deep_supervision)
 
         self.print_plans()
         empty_cache(self.device)
 
-        # maybe unpack
+
         if self.unpack_dataset and self.local_rank == 0:
             self.print_to_log_file('unpacking dataset...')
             unpack_dataset(self.preprocessed_dataset_folder, unpack_segmentation=True, overwrite_existing=False,
@@ -827,38 +827,38 @@ class nnUNetTrainer(object):
         if self.is_ddp:
             dist.barrier()
 
-        # dataloaders must be instantiated here because they need access to the training data which may not be present
-        # when doing inference
+
+
         self.dataloader_train, self.dataloader_val = self.get_dataloaders()
 
-        # copy plans and dataset.json so that they can be used for restoring everything we need for inference
+
         save_json(self.plans_manager.plans, join(self.output_folder_base, 'plans.json'), sort_keys=False)
         save_json(self.dataset_json, join(self.output_folder_base, 'dataset.json'), sort_keys=False)
 
-        # we don't really need the fingerprint but its still handy to have it with the others
+
         shutil.copy(join(self.preprocessed_dataset_folder_base, 'dataset_fingerprint.json'),
                     join(self.output_folder_base, 'dataset_fingerprint.json'))
 
-        # produces a pdf in output folder
+
         self.plot_network_architecture()
 
         self._save_debug_information()
 
-        # print(f"batch size: {self.batch_size}")
-        # print(f"oversample: {self.oversample_foreground_percent}")
+
+
 
     def on_train_end(self):
-        # dirty hack because on_epoch_end increments the epoch counter and this is executed afterwards.
-        # This will lead to the wrong current epoch to be stored
+
+
         self.current_epoch -= 1
         self.save_checkpoint(join(self.output_folder, "checkpoint_final.pth"))
         self.current_epoch += 1
 
-        # now we can delete latest
+
         if self.local_rank == 0 and isfile(join(self.output_folder, "checkpoint_latest.pth")):
             os.remove(join(self.output_folder, "checkpoint_latest.pth"))
 
-        # shut down dataloaders
+
         old_stdout = sys.stdout
         with open(os.devnull, 'w') as f:
             sys.stdout = f
@@ -878,7 +878,7 @@ class nnUNetTrainer(object):
         self.print_to_log_file(f'Epoch {self.current_epoch}')
         self.print_to_log_file(
             f"Current learning rate: {np.round(self.optimizer.param_groups[0]['lr'], decimals=5)}")
-        # lrs are the same for all workers so we don't need to gather them in case of DDP training
+
         self.logger.log('lrs', self.optimizer.param_groups[0]['lr'], self.current_epoch)
 
     def train_step(self, batch: dict) -> dict:
@@ -892,13 +892,13 @@ class nnUNetTrainer(object):
             target = target.to(self.device, non_blocking=True)
 
         self.optimizer.zero_grad(set_to_none=True)
-        # Autocast is a little bitch.
-        # If the device_type is 'cpu' then it's slow as heck and needs to be disabled.
-        # If the device_type is 'mps' then it will complain that mps is not implemented, even if enabled=False is set. Whyyyyyyy. (this is why we don't make use of enabled=False)
-        # So autocast will only be active if we have a cuda device.
+
+
+
+
         with autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
-            # del data
+
             l = self.loss(output, target)
 
         if self.grad_scaler is not None:
@@ -938,27 +938,27 @@ class nnUNetTrainer(object):
         else:
             target = target.to(self.device, non_blocking=True)
 
-        # Autocast is a little bitch.
-        # If the device_type is 'cpu' then it's slow as heck and needs to be disabled.
-        # If the device_type is 'mps' then it will complain that mps is not implemented, even if enabled=False is set. Whyyyyyyy. (this is why we don't make use of enabled=False)
-        # So autocast will only be active if we have a cuda device.
+
+
+
+
         with autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
             del data
             l = self.loss(output, target)
 
-        # we only need the output with the highest output resolution (if DS enabled)
+
         if self.enable_deep_supervision:
             output = output[0]
             target = target[0]
 
-        # the following is needed for online evaluation. Fake dice (green line)
+
         axes = [0] + list(range(2, output.ndim))
 
         if self.label_manager.has_regions:
             predicted_segmentation_onehot = (torch.sigmoid(output) > 0.5).long()
         else:
-            # no need for softmax
+
             output_seg = output.argmax(1)[:, None]
             predicted_segmentation_onehot = torch.zeros(output.shape, device=output.device, dtype=torch.float32)
             predicted_segmentation_onehot.scatter_(1, output_seg, 1)
@@ -967,11 +967,11 @@ class nnUNetTrainer(object):
         if self.label_manager.has_ignore_label:
             if not self.label_manager.has_regions:
                 mask = (target != self.label_manager.ignore_label).float()
-                # CAREFUL that you don't rely on target after this line!
+
                 target[target == self.label_manager.ignore_label] = 0
             else:
                 mask = 1 - target[:, -1:]
-                # CAREFUL that you don't rely on target after this line!
+
                 target = target[:, :-1]
         else:
             mask = None
@@ -982,10 +982,10 @@ class nnUNetTrainer(object):
         fp_hard = fp.detach().cpu().numpy()
         fn_hard = fn.detach().cpu().numpy()
         if not self.label_manager.has_regions:
-            # if we train with regions all segmentation heads predict some kind of foreground. In conventional
-            # (softmax training) there needs tobe one output for the background. We are not interested in the
-            # background Dice
-            # [1:] in order to remove background
+
+
+
+
             tp_hard = tp_hard[1:]
             fp_hard = fp_hard[1:]
             fn_hard = fn_hard[1:]
@@ -1038,12 +1038,12 @@ class nnUNetTrainer(object):
         self.print_to_log_file(
             f"Epoch time: {np.round(self.logger.my_fantastic_logging['epoch_end_timestamps'][-1] - self.logger.my_fantastic_logging['epoch_start_timestamps'][-1], decimals=2)} s")
 
-        # handling periodic checkpointing
+
         current_epoch = self.current_epoch
         if (current_epoch + 1) % self.save_every == 0 and current_epoch != (self.num_epochs - 1):
             self.save_checkpoint(join(self.output_folder, 'checkpoint_latest.pth'))
 
-        # handle 'best' checkpointing. ema_fg_dice is computed by the logger and can be accessed like this
+
         if self._best_ema is None or self.logger.my_fantastic_logging['ema_fg_dice'][-1] > self._best_ema:
             self._best_ema = self.logger.my_fantastic_logging['ema_fg_dice'][-1]
             self.print_to_log_file(f"Yayy! New best EMA pseudo Dice: {np.round(self._best_ema, decimals=4)}")
@@ -1085,8 +1085,8 @@ class nnUNetTrainer(object):
 
         if isinstance(filename_or_checkpoint, str):
             checkpoint = torch.load(filename_or_checkpoint, map_location=self.device)
-        # if state dict comes from nn.DataParallel but we use non-parallel model here then the state dict keys do not
-        # match. Use heuristic to make it match
+
+
         new_state_dict = {}
         for k, value in checkpoint['network_weights'].items():
             key = k
@@ -1101,7 +1101,7 @@ class nnUNetTrainer(object):
         self.inference_allowed_mirroring_axes = checkpoint[
             'inference_allowed_mirroring_axes'] if 'inference_allowed_mirroring_axes' in checkpoint.keys() else self.inference_allowed_mirroring_axes
 
-        # messing with state dict naming schemes. Facepalm.
+
         if self.is_ddp:
             if isinstance(self.network.module, OptimizedModule):
                 self.network.module._orig_mod.load_state_dict(new_state_dict)
@@ -1133,8 +1133,8 @@ class nnUNetTrainer(object):
             validation_output_folder = join(self.output_folder, 'validation')
             maybe_mkdir_p(validation_output_folder)
 
-            # we cannot use self.get_tr_and_val_datasets() here because we might be DDP and then we have to distribute
-            # the validation keys across the workers.
+
+
             _, val_keys = self.do_split()
             if self.is_ddp:
                 val_keys = val_keys[self.local_rank:: dist.get_world_size()]
@@ -1165,7 +1165,7 @@ class nnUNetTrainer(object):
                     data = np.vstack((data, convert_labelmap_to_one_hot(seg[-1], self.label_manager.foreground_labels,
                                                                         output_dtype=data.dtype)))
                 with warnings.catch_warnings():
-                    # ignore 'The given NumPy array is not writable' warning
+
                     warnings.simplefilter("ignore")
                     data = torch.from_numpy(data)
 
@@ -1180,7 +1180,7 @@ class nnUNetTrainer(object):
 
                 prediction = prediction.cpu()
 
-                # this needs to go into background processes
+
                 results.append(
                     segmentation_export_pool.starmap_async(
                         export_prediction_from_logits, (
@@ -1189,11 +1189,11 @@ class nnUNetTrainer(object):
                         )
                     )
                 )
-                # for debug purposes
-                # export_prediction(prediction_for_export, properties, self.configuration, self.plans, self.dataset_json,
-                #              output_filename_truncated, save_probabilities)
 
-                # if needed, export the softmax prediction for the next stage
+
+
+
+
                 if next_stages is not None:
                     for n in next_stages:
                         next_stage_config_manager = self.plans_manager.get_configuration(n)
@@ -1201,7 +1201,7 @@ class nnUNetTrainer(object):
                                                             next_stage_config_manager.data_identifier)
 
                         try:
-                            # we do this so that we can use load_case and do not have to hard code how loading training cases is implemented
+
                             tmp = nnUNetDataset(expected_preprocessed_folder, [k],
                                                 num_images_properties_loading_threshold=0)
                             d, s, p = tmp.load_case(k)
@@ -1215,8 +1215,8 @@ class nnUNetTrainer(object):
                         output_folder = join(self.output_folder_base, 'predicted_next_stage', n)
                         output_file = join(output_folder, k + '.npz')
 
-                        # resample_and_save(prediction, target_shape, output_file, self.plans_manager, self.configuration_manager, properties,
-                        #                   self.dataset_json)
+
+
                         results.append(segmentation_export_pool.starmap_async(
                             resample_and_save, (
                                 (prediction, target_shape, output_file, self.plans_manager,

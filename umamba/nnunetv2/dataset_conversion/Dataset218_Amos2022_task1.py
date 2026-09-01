@@ -13,7 +13,7 @@ def convert_amos_task1(amos_base_dir: str, nnunet_dataset_id: int = 218):
 
     foldername = "Dataset%03.0d_%s" % (nnunet_dataset_id, task_name)
 
-    # setting up nnU-Net folders
+
     out_base = join(nnUNet_raw, foldername)
     imagestr = join(out_base, "imagesTr")
     imagests = join(out_base, "imagesTs")
@@ -27,19 +27,19 @@ def convert_amos_task1(amos_base_dir: str, nnunet_dataset_id: int = 218):
     training_identifiers = [i['image'].split('/')[-1][:-7] for i in dataset_json_source['training']]
     tr_ctr = 0
     for tr in training_identifiers:
-        if int(tr.split("_")[-1]) <= 410: # these are the CT images
+        if int(tr.split("_")[-1]) <= 410:
             tr_ctr += 1
             shutil.copy(join(amos_base_dir, 'imagesTr', tr + '.nii.gz'), join(imagestr, f'{tr}_0000.nii.gz'))
             shutil.copy(join(amos_base_dir, 'labelsTr', tr + '.nii.gz'), join(labelstr, f'{tr}.nii.gz'))
 
     test_identifiers = [i['image'].split('/')[-1][:-7] for i in dataset_json_source['test']]
     for ts in test_identifiers:
-        if int(ts.split("_")[-1]) <= 500: # these are the CT images
+        if int(ts.split("_")[-1]) <= 500:
             shutil.copy(join(amos_base_dir, 'imagesTs', ts + '.nii.gz'), join(imagests, f'{ts}_0000.nii.gz'))
 
     val_identifiers = [i['image'].split('/')[-1][:-7] for i in dataset_json_source['validation']]
     for vl in val_identifiers:
-        if int(vl.split("_")[-1]) <= 409: # these are the CT images
+        if int(vl.split("_")[-1]) <= 409:
             tr_ctr += 1
             shutil.copy(join(amos_base_dir, 'imagesVa', vl + '.nii.gz'), join(imagestr, f'{vl}_0000.nii.gz'))
             shutil.copy(join(amos_base_dir, 'labelsVa', vl + '.nii.gz'), join(labelstr, f'{vl}.nii.gz'))
@@ -66,5 +66,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     amos_base = args.input_folder
     convert_amos_task1(amos_base, args.d)
-
-

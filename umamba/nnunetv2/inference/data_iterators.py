@@ -147,9 +147,9 @@ class PreprocessAdapter(DataLoader):
         files = self._data[idx][0]
         seg_prev_stage = self._data[idx][1]
         ofile = self._data[idx][2]
-        # if we have a segmentation from the previous stage we have to process it together with the images so that we
-        # can crop it appropriately (if needed). Otherwise it would just be resized to the shape of the data after
-        # preprocessing and then there might be misalignments
+
+
+
         data, seg, data_properties = self.preprocessor.run_case(files, seg_prev_stage, self.plans_manager,
                                                                 self.configuration_manager,
                                                                 self.dataset_json)
@@ -194,9 +194,9 @@ class PreprocessAdapterFromNpy(DataLoader):
         seg_prev_stage = self._data[idx][1]
         props = self._data[idx][2]
         ofname = self._data[idx][3]
-        # if we have a segmentation from the previous stage we have to process it together with the images so that we
-        # can crop it appropriately (if needed). Otherwise it would just be resized to the shape of the data after
-        # preprocessing and then there might be misalignments
+
+
+
         data, seg = self.preprocessor.run_case_npy(image, seg_prev_stage, props,
                                                    self.plans_manager,
                                                    self.configuration_manager,

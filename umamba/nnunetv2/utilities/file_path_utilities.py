@@ -28,14 +28,14 @@ def get_output_folder(dataset_name_or_id: Union[str, int], trainer_name: str = '
 
 def parse_dataset_trainer_plans_configuration_from_path(path: str):
     folders = split_path(path)
-    # this here can be a little tricky because we are making assumptions. Let's hope this never fails lol
 
-    # safer to make this depend on two conditions, the fold_x and the DatasetXXX
-    # first let's see if some fold_X is present
+
+
+
     fold_x_present = [i.startswith('fold_') for i in folders]
     if any(fold_x_present):
         idx = fold_x_present.index(True)
-        # OK now two entries before that there should be DatasetXXX
+
         assert len(folders[:idx]) >= 2, 'Bad path, cannot extract what I need. Your path needs to be at least ' \
                                         'DatasetXXX/MODULE__PLANS__CONFIGURATION for this to work'
         if folders[idx - 2].startswith('Dataset'):
@@ -44,8 +44,8 @@ def parse_dataset_trainer_plans_configuration_from_path(path: str):
                                         'DatasetXXX/MODULE__PLANS__CONFIGURATION for this to work'
             return folders[idx - 2], *split
     else:
-        # we can only check for dataset followed by a string that is separable into three strings by splitting with '__'
-        # look for DatasetXXX
+
+
         dataset_folder = [i.startswith('Dataset') for i in folders]
         if any(dataset_folder):
             idx = dataset_folder.index(True)
@@ -109,7 +109,7 @@ def check_workers_alive_and_busy(export_pool: Pool, worker_list: List, results_l
 
 
 if __name__ == '__main__':
-    ### well at this point I could just write tests...
+
     path = '/home/fabian/results/nnUNet_remake/Dataset002_Heart/nnUNetModule__nnUNetPlans__3d_fullres'
     print(parse_dataset_trainer_plans_configuration_from_path(path))
     path = 'Dataset002_Heart/nnUNetModule__nnUNetPlans__3d_fullres'

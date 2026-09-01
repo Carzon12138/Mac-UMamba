@@ -32,7 +32,7 @@ def move_plans_between_datasets(
     source_plans = load_json(source_plans_file)
     source_plans['dataset_name'] = target_dataset_name
 
-    # we need to change data_identifier to use target_plans_identifier
+
     if target_plans_identifier != source_plans_identifier:
         for c in source_plans['configurations'].keys():
             if 'data_identifier' in source_plans['configurations'][c].keys():
@@ -43,12 +43,12 @@ def move_plans_between_datasets(
                     new_identifier = target_plans_identifier + '_' + old_identifier
                 source_plans['configurations'][c]["data_identifier"] = new_identifier
 
-    # we need to change the reader writer class!
+
     target_raw_data_dir = join(nnUNet_raw, target_dataset_name)
     target_dataset_json = load_json(join(target_raw_data_dir, 'dataset.json'))
 
-    # we may need to change the reader/writer
-    # pick any file from the source dataset
+
+
     dataset = get_filenames_of_train_images_and_targets(target_raw_data_dir, target_dataset_json)
     example_image = dataset[dataset.keys().__iter__().__next__()]['images'][0]
     rw = determine_reader_writer_from_dataset_json(target_dataset_json, example_image, allow_nonmatching_filename=True,

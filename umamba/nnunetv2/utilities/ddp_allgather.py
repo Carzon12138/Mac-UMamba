@@ -1,16 +1,16 @@
-#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 from typing import Any, Optional, Tuple
 
 import torch
@@ -23,7 +23,7 @@ def print_if_rank0(*args):
 
 
 class AllGatherGrad(torch.autograd.Function):
-    # stolen from pytorch lightning
+
     @staticmethod
     def forward(
         ctx: Any,
@@ -46,4 +46,3 @@ class AllGatherGrad(torch.autograd.Function):
         torch.distributed.all_reduce(grad_output, op=torch.distributed.ReduceOp.SUM, async_op=False, group=ctx.group)
 
         return grad_output[torch.distributed.get_rank()], None
-

@@ -11,8 +11,8 @@ class nnUNetTrainerAdam(nnUNetTrainer):
                           lr=self.initial_lr,
                           weight_decay=self.weight_decay,
                           amsgrad=True)
-        # optimizer = torch.optim.SGD(self.network.parameters(), self.initial_lr, weight_decay=self.weight_decay,
-        #                             momentum=0.99, nesterov=True)
+
+
         lr_scheduler = PolyLRScheduler(optimizer, self.initial_lr, self.num_epochs)
         return optimizer, lr_scheduler
 
@@ -22,8 +22,8 @@ class nnUNetTrainerVanillaAdam(nnUNetTrainer):
         optimizer = Adam(self.network.parameters(),
                          lr=self.initial_lr,
                          weight_decay=self.weight_decay)
-        # optimizer = torch.optim.SGD(self.network.parameters(), self.initial_lr, weight_decay=self.weight_decay,
-        #                             momentum=0.99, nesterov=True)
+
+
         lr_scheduler = PolyLRScheduler(optimizer, self.initial_lr, self.num_epochs)
         return optimizer, lr_scheduler
 
@@ -36,7 +36,7 @@ class nnUNetTrainerVanillaAdam1en3(nnUNetTrainerVanillaAdam):
 
 
 class nnUNetTrainerVanillaAdam3en4(nnUNetTrainerVanillaAdam):
-    # https://twitter.com/karpathy/status/801621764144971776?lang=en
+
     def __init__(self, plans: dict, configuration: str, fold: int, dataset_json: dict, unpack_dataset: bool = True,
                  device: torch.device = torch.device('cuda')):
         super().__init__(plans, configuration, fold, dataset_json, unpack_dataset, device)
@@ -51,7 +51,7 @@ class nnUNetTrainerAdam1en3(nnUNetTrainerAdam):
 
 
 class nnUNetTrainerAdam3en4(nnUNetTrainerAdam):
-    # https://twitter.com/karpathy/status/801621764144971776?lang=en
+
     def __init__(self, plans: dict, configuration: str, fold: int, dataset_json: dict, unpack_dataset: bool = True,
                  device: torch.device = torch.device('cuda')):
         super().__init__(plans, configuration, fold, dataset_json, unpack_dataset, device)

@@ -18,8 +18,8 @@ def load_and_covnert_case(input_image: str, input_seg: str, output_image: str, o
     image = io.imread(input_image)
     image = image.sum(2)
     mask = image == (3 * 255)
-    # the dataset has large white areas in which road segmentations can exist but no image information is available.
-    # Remove the road label in these areas
+
+
     mask = generic_filter_components(mask, filter_fn=lambda ids, sizes: [i for j, i in enumerate(ids) if
                                                                          sizes[j] > min_component_size])
     mask = binary_fill_holes(mask)
@@ -29,7 +29,7 @@ def load_and_covnert_case(input_image: str, input_seg: str, output_image: str, o
 
 
 if __name__ == "__main__":
-    # extracted archive from https://www.kaggle.com/datasets/insaff/massachusetts-roads-dataset?resource=download
+
     source = '/media/fabian/data/raw_datasets/Massachussetts_road_seg/road_segmentation_ideal'
 
     dataset_name = 'Dataset120_RoadSegmentation'
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     with multiprocessing.get_context("spawn").Pool(8) as p:
 
-        # not all training images have a segmentation
+
         valid_ids = subfiles(join(train_source, 'output'), join=False, suffix='png')
         num_train = len(valid_ids)
         r = []
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                 )
             )
 
-        # test set
+
         valid_ids = subfiles(join(test_source, 'output'), join=False, suffix='png')
         for v in valid_ids:
             r.append(

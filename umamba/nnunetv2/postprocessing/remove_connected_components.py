@@ -29,7 +29,7 @@ def remove_all_but_largest_component_from_segmentation(segmentation: np.ndarray,
     for l_or_r in labels_or_regions:
         mask |= region_or_label_to_mask(segmentation, l_or_r)
     mask_keep = remove_all_but_largest_component(mask)
-    ret = np.copy(segmentation)  # do not modify the input!
+    ret = np.copy(segmentation)
     ret[mask & ~mask_keep] = background_label
     return ret
 
@@ -72,7 +72,7 @@ def determine_postprocessing(folder_predictions: str,
         expected_plans_file = join(folder_predictions, 'plans.json')
         if not isfile(expected_plans_file):
             raise RuntimeError(f"Expected plans file missing: {expected_plans_file}. The plans files should have been "
-                               f"created while running nnUNetv2_predict. Sadge.")
+                               f"created while running nnUNetv2_predict.")
         plans_file_or_dict = load_json(expected_plans_file)
     plans_manager = PlansManager(plans_file_or_dict)
 
@@ -81,7 +81,7 @@ def determine_postprocessing(folder_predictions: str,
         if not isfile(expected_dataset_json_file):
             raise RuntimeError(
                 f"Expected plans file missing: {expected_dataset_json_file}. The plans files should have been "
-                f"created while running nnUNetv2_predict. Sadge.")
+                f"created while running nnUNetv2_predict.")
         dataset_json_file_or_dict = load_json(expected_dataset_json_file)
 
     if not isinstance(dataset_json_file_or_dict, dict):
@@ -95,12 +95,12 @@ def determine_postprocessing(folder_predictions: str,
 
     predicted_files = subfiles(folder_predictions, suffix=dataset_json['file_ending'], join=False)
     ref_files = subfiles(folder_ref, suffix=dataset_json['file_ending'], join=False)
-    # we should print a warning if not all files from folder_ref are present in folder_predictions
+
     if not all([i in predicted_files for i in ref_files]):
         print(f'WARNING: Not all files in folder_ref were found in folder_predictions. Determining postprocessing '
               f'should always be done on the entire dataset!')
 
-    # before we start we should evaluate the imaegs in the source folder
+
     if not isfile(join(folder_predictions, 'summary.json')):
         compute_metrics_on_folder(folder_ref,
                                   folder_predictions,
@@ -111,13 +111,13 @@ def determine_postprocessing(folder_predictions: str,
                                   label_manager.ignore_label,
                                   num_processes)
 
-    # we save the postprocessing functions in here
+
     pp_fns = []
     pp_fn_kwargs = []
 
-    # pool party!
+
     with multiprocessing.get_context("spawn").Pool(num_processes) as pool:
-        # now let's see whether removing all but the largest foreground region improves the scores
+
         output_here = join(output_folder, 'temp', 'keep_largest_fg')
         maybe_mkdir_p(output_here)
         pp_fn = remove_all_but_largest_component_from_segmentation
@@ -143,9 +143,9 @@ def determine_postprocessing(folder_predictions: str,
                                   labels_or_regions,
                                   label_manager.ignore_label,
                                   num_processes)
-        # now we need to figure out if doing this improved the dice scores. We will implement that defensively in so far
-        # that if a single class got worse as a result we won't do this. We can change this in the future but right now I
-        # prefer to do it this way
+
+
+
         baseline_results = load_summary_json(join(folder_predictions, 'summary.json'))
         pp_results = load_summary_json(join(output_here, 'summary.json'))
         do_this = pp_results['foreground_mean']['Dice'] > baseline_results['foreground_mean']['Dice']
@@ -165,14 +165,14 @@ def determine_postprocessing(folder_predictions: str,
             print(f'Removing all but the largest foreground region did not improve results!')
             source = folder_predictions
 
-        # in the old nnU-Net we could just apply all-but-largest component removal to all classes at the same time and
-        # then evaluate for each class whether this improved results. This is no longer possible because we now support
-        # region-based predictions and regions can overlap, causing interactions
-        # in principle the order with which the postprocessing is applied to the regions matter as well and should be
-        # investigated, but due to some things that I am too lazy to explain right now it's going to be alright (I think)
-        # to stick to the order in which they are declared in dataset.json (if you want to think about it then think about
-        # region_class_order)
-        # 2023_02_06: I hate myself for the comment above. Thanks past me
+
+
+
+
+
+
+
+
         if len(labels_or_regions) > 1:
             for label_or_region in labels_or_regions:
                 pp_fn = remove_all_but_largest_component_from_segmentation
@@ -229,12 +229,12 @@ def determine_postprocessing(folder_predictions: str,
         'postprocessing_fns': [i.__name__ for i in pp_fns],
         'postprocessing_kwargs': pp_fn_kwargs,
     }
-    # json is a very annoying little bi###. Can't handle tuples as dict keys.
+
     tmp['input_folder']['mean'] = {label_or_region_to_key(k): tmp['input_folder']['mean'][k] for k in
                                    tmp['input_folder']['mean'].keys()}
     tmp['postprocessed']['mean'] = {label_or_region_to_key(k): tmp['postprocessed']['mean'][k] for k in
                                     tmp['postprocessed']['mean'].keys()}
-    # did I already say that I hate json? "TypeError: Object of type int64 is not JSON serializable" You retarded bro?
+
     recursive_fix_for_json_export(tmp)
     save_json(tmp, join(folder_predictions, 'postprocessing.json'))
 
@@ -259,7 +259,7 @@ def apply_postprocessing_to_folder(input_folder: str,
         expected_plans_file = join(input_folder, 'plans.json')
         if not isfile(expected_plans_file):
             raise RuntimeError(f"Expected plans file missing: {expected_plans_file}. The plans file should have been "
-                               f"created while running nnUNetv2_predict. Sadge. If the folder you want to apply "
+                               f"created while running nnUNetv2_predict. If the folder you want to apply "
                                f"postprocessing to was create from an ensemble then just specify one of the "
                                f"plans files of the ensemble members in plans_file_or_dict")
         plans_file_or_dict = load_json(expected_plans_file)
@@ -270,7 +270,7 @@ def apply_postprocessing_to_folder(input_folder: str,
         if not isfile(expected_dataset_json_file):
             raise RuntimeError(
                 f"Expected plans file missing: {expected_dataset_json_file}. The dataset.json should have been "
-                f"copied while running nnUNetv2_predict/nnUNetv2_ensemble. Sadge.")
+                f"copied while running nnUNetv2_predict/nnUNetv2_ensemble.")
         dataset_json_file_or_dict = load_json(expected_dataset_json_file)
 
     if not isinstance(dataset_json_file_or_dict, dict):
