@@ -100,7 +100,7 @@ def select_slice_to_plot(image: np.ndarray, segmentation: np.ndarray) -> int:
 
     selects the slice with the largest amount of fg (regardless of label)
 
-    we give image so that we can easily replace this function if needed
+    the image argument is retained for compatibility with alternative slice-selection implementations
     """
     fg_mask = segmentation != 0
     fg_per_slice = fg_mask.sum((1, 2))
@@ -115,7 +115,7 @@ def select_slice_to_plot2(image: np.ndarray, segmentation: np.ndarray) -> int:
     selects the slice with the largest amount of fg (how much percent of each class are in each slice? pick slice
     with highest avg percent)
 
-    we give image so that we can easily replace this function if needed
+    the image argument is retained for compatibility with alternative slice-selection implementations
     """
     classes = [i for i in np.sort(pd.unique(segmentation.ravel())) if i != 0]
     fg_per_slice = np.zeros((image.shape[0], len(classes)))

@@ -152,7 +152,7 @@ if __name__ == "__main__":
         "format. It can also be used to create additional custom splits, for explicitly training on combinations "
         "of vendors A and B (see `--custom-splits`).\n"
         "If you wish to generate the custom splits, run the following pipeline:\n\n"
-        "(1) Run `Dataset114_MNMs -i <raw_Data_dir>\n"
+        "(1) Run `Dataset114_MNMs -i data/MNMs`\n"
         "(2) Run `nnUNetv2_plan_and_preprocess -d 114 --verify_dataset_integrity`\n"
         "(3) Start training, but stop after initial splits are created: `nnUNetv2_train 114 2d 0`\n"
         "(4) Re-run `Dataset114_MNMs`, with `-s True`.\n"
