@@ -92,11 +92,11 @@ The repository includes dataset metadata and conversion utilities only. Raw data
 
 ## Repository migration
 
-The original GitHub account is no longer available. This repository is the migrated and maintained location for MAC-UMamba; please use it for future downloads, issues and updates.
+The original GitHub account is no longer available. The previous repository URL was `https://github.com/Corazon12138/MACU-Mamba-main`. This repository is the migrated and maintained location for MAC-UMamba; please use it for future downloads, issues and updates.
 
 ## Citation
 
-If you use this code, please cite:
+If this paper is helpful to your research, please cite it:
 
 DOI: [10.1016/j.eswa.2026.132606](https://doi.org/10.1016/j.eswa.2026.132606)
 
